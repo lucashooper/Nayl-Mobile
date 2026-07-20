@@ -8,7 +8,8 @@ import React, {
   useCallback,
   useRef,
 } from 'react';
-import sessionService from '../services/sessionService';
+import sessionService, { USER_SESSION_CHANGED } from '../services/sessionService';
+import { DeviceEventEmitter } from 'react-native';
 
 interface StreakContextType {
   elapsedSeconds: number;
@@ -36,6 +37,12 @@ export const StreakProvider: React.FC<StreakProviderProps> = ({ children }) => {
 
   const syncStartTimeFromDatabase = useCallback(async () => {
     try {
+      const hasUser = await sessionService.hasUser();
+      if (!hasUser) {
+        streakStartMsRef.current = Date.now();
+        setElapsedSeconds(0);
+        return;
+      }
       const session = await sessionService.getCurrentSession();
       if (session?.start_time) {
         streakStartMsRef.current = new Date(session.start_time).getTime();
@@ -43,6 +50,8 @@ export const StreakProvider: React.FC<StreakProviderProps> = ({ children }) => {
       setElapsedSeconds(computeElapsed());
     } catch (error) {
       console.error('StreakContext: Error syncing start time:', error);
+      streakStartMsRef.current = Date.now();
+      setElapsedSeconds(0);
     }
   }, [computeElapsed]);
 
@@ -85,6 +94,15 @@ export const StreakProvider: React.FC<StreakProviderProps> = ({ children }) => {
 
   useEffect(() => {
     syncStartTimeFromDatabase();
+
+    const subscription = DeviceEventEmitter.addListener(
+      USER_SESSION_CHANGED,
+      () => {
+        syncStartTimeFromDatabase();
+      },
+    );
+
+    return () => subscription.remove();
   }, [syncStartTimeFromDatabase]);
 
   // Tick locally from anchor — avoids DB race conditions on reset
@@ -94,10 +112,18 @@ export const StreakProvider: React.FC<StreakProviderProps> = ({ children }) => {
       setElapsedSeconds(elapsed);
 
       if (elapsed > 0 && elapsed % 60 === 0) {
-        sessionService.updateSession(elapsed).catch(() => undefined);
+        sessionService.hasUser().then((hasUser) => {
+          if (hasUser) {
+            sessionService.updateSession(elapsed).catch(() => undefined);
+          }
+        });
       }
       if (elapsed > 0 && elapsed % 300 === 0) {
-        sessionService.updateLongestStreakIfNeeded(elapsed).catch(() => undefined);
+        sessionService.hasUser().then((hasUser) => {
+          if (hasUser) {
+            sessionService.updateLongestStreakIfNeeded(elapsed).catch(() => undefined);
+          }
+        });
       }
     }, 1000);
 

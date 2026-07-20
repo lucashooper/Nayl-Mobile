@@ -4,24 +4,30 @@ import Purchases, {
   CustomerInfo,
   LOG_LEVEL,
 } from 'react-native-purchases';
-import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import sessionService from './sessionService';
 
-// ─── CONFIGURATION ────────────────────────────────────────────────────────────
-// Replace these with your actual RevenueCat API keys from https://app.revenuecat.com
-const REVENUECAT_IOS_API_KEY = 'appl_REPLACE_WITH_YOUR_REVENUECAT_IOS_KEY';
+const REVENUECAT_IOS_API_KEY =
+  process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? '';
 
-// The entitlement identifier you configure in the RevenueCat dashboard
-const ENTITLEMENT_PRO = 'pro';
+const ENTITLEMENT_ID = 'default';
+const SUBSCRIPTION_STATUS_BASE = '@nayl_is_pro';
 
-// AsyncStorage key for caching subscription status (avoids a network call on launch)
-const SUBSCRIPTION_STATUS_KEY = '@nayl_is_pro';
+async function getSubscriptionStorageKey(): Promise<string> {
+  return sessionService.getUserStorageKey(SUBSCRIPTION_STATUS_BASE);
+}
 
 class IAPService {
   private initialized = false;
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
+
+    if (!REVENUECAT_IOS_API_KEY || REVENUECAT_IOS_API_KEY.includes('REPLACE')) {
+      console.warn('RevenueCat iOS API key is not configured.');
+      return;
+    }
+
     try {
       if (__DEV__) {
         await Purchases.setLogLevel(LOG_LEVEL.DEBUG);
@@ -36,6 +42,7 @@ class IAPService {
   async getOfferings(): Promise<PurchasesOffering | null> {
     try {
       await this.initialize();
+      if (!this.initialized) return null;
       const offerings = await Purchases.getOfferings();
       return offerings.current;
     } catch (error) {
@@ -47,9 +54,13 @@ class IAPService {
   async purchasePackage(pkg: PurchasesPackage): Promise<{ success: boolean; customerInfo?: CustomerInfo; userCancelled?: boolean }> {
     try {
       await this.initialize();
+      if (!this.initialized) {
+        throw new Error('Purchases are not configured.');
+      }
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      const isPro = typeof customerInfo.entitlements.active[ENTITLEMENT_PRO] !== 'undefined';
-      await AsyncStorage.setItem(SUBSCRIPTION_STATUS_KEY, JSON.stringify(isPro));
+      const isPro = typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
+      const storageKey = await getSubscriptionStorageKey();
+      await AsyncStorage.setItem(storageKey, JSON.stringify(isPro));
       return { success: isPro, customerInfo };
     } catch (error: any) {
       if (error.userCancelled) {
@@ -63,9 +74,13 @@ class IAPService {
   async restorePurchases(): Promise<{ success: boolean; customerInfo?: CustomerInfo }> {
     try {
       await this.initialize();
+      if (!this.initialized) {
+        throw new Error('Purchases are not configured.');
+      }
       const customerInfo = await Purchases.restorePurchases();
-      const isPro = typeof customerInfo.entitlements.active[ENTITLEMENT_PRO] !== 'undefined';
-      await AsyncStorage.setItem(SUBSCRIPTION_STATUS_KEY, JSON.stringify(isPro));
+      const isPro = typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
+      const storageKey = await getSubscriptionStorageKey();
+      await AsyncStorage.setItem(storageKey, JSON.stringify(isPro));
       return { success: isPro, customerInfo };
     } catch (error) {
       console.error('Restore purchases error:', error);
@@ -75,15 +90,29 @@ class IAPService {
 
   async isProUser(): Promise<boolean> {
     try {
+      const hasUser = await sessionService.hasUser();
+      if (!hasUser) return false;
+
       await this.initialize();
+      if (!this.initialized) {
+        const storageKey = await getSubscriptionStorageKey();
+        const cached = await AsyncStorage.getItem(storageKey);
+        if (cached !== null) return JSON.parse(cached);
+        return false;
+      }
       const customerInfo = await Purchases.getCustomerInfo();
-      const isPro = typeof customerInfo.entitlements.active[ENTITLEMENT_PRO] !== 'undefined';
-      await AsyncStorage.setItem(SUBSCRIPTION_STATUS_KEY, JSON.stringify(isPro));
+      const isPro = typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
+      const storageKey = await getSubscriptionStorageKey();
+      await AsyncStorage.setItem(storageKey, JSON.stringify(isPro));
       return isPro;
     } catch (error) {
-      // Fall back to cached value
-      const cached = await AsyncStorage.getItem(SUBSCRIPTION_STATUS_KEY);
-      if (cached !== null) return JSON.parse(cached);
+      try {
+        const storageKey = await getSubscriptionStorageKey();
+        const cached = await AsyncStorage.getItem(storageKey);
+        if (cached !== null) return JSON.parse(cached);
+      } catch {
+        // fall through
+      }
       return false;
     }
   }

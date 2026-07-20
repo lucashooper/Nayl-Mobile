@@ -116,7 +116,8 @@ class ProfileService {
 
   async getCachedProfileData(): Promise<ProfileData | null> {
     try {
-      const cached = await AsyncStorage.getItem(PROFILE_CACHE_KEY);
+      const key = await sessionService.getUserStorageKey(PROFILE_CACHE_KEY);
+      const cached = await AsyncStorage.getItem(key);
       if (cached) {
         return JSON.parse(cached) as ProfileData;
       }
@@ -128,7 +129,8 @@ class ProfileService {
 
   private async cacheProfileData(data: ProfileData): Promise<void> {
     try {
-      await AsyncStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(data));
+      const key = await sessionService.getUserStorageKey(PROFILE_CACHE_KEY);
+      await AsyncStorage.setItem(key, JSON.stringify(data));
     } catch {
       // Non-critical
     }

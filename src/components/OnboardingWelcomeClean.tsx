@@ -16,18 +16,9 @@ const { width, height } = Dimensions.get('window');
 interface OnboardingWelcomeProps {
   onStart: () => void;
   onSkip: () => void;
-  onSkipToPlan?: () => void; // New prop for skipping to plan
 }
 
-const OnboardingWelcomeClean: React.FC<OnboardingWelcomeProps> = ({ onStart, onSkip, onSkipToPlan }) => {
-  // Debug logging for star visibility
-  React.useEffect(() => {
-    console.log('OnboardingWelcomeClean: Component mounted, stars should be visible');
-    console.log('Stars container style:', styles.starsContainer);
-    console.log('Base star style:', styles.star);
-    console.log('Sample star1 style:', styles.star1);
-  }, []);
-
+const OnboardingWelcomeClean: React.FC<OnboardingWelcomeProps> = ({ onStart, onSkip }) => {
   const handleStart = () => {
     hapticService.trigger(HapticType.SUCCESS, HapticIntensity.NORMAL);
     onStart();
@@ -51,44 +42,12 @@ const OnboardingWelcomeClean: React.FC<OnboardingWelcomeProps> = ({ onStart, onS
       />
       
       {/* Subtle Starfield Background */}
-      <View 
-        style={styles.starsContainer}
-        onLayout={() => console.log('Stars container layout completed')}
-      >
-        {/* Debug: Add a very visible test star */}
-        <View 
-          style={{
-            position: 'absolute',
-            width: 20,
-            height: 20,
-            backgroundColor: 'red',
-            borderRadius: 10,
-            top: '50%',
-            left: '50%',
-            zIndex: 10,
-          }}
-          onLayout={() => console.log('DEBUG: Red test star rendered')}
-        />
-        <View 
-          style={[styles.star, styles.star1]} 
-          onLayout={() => console.log('Star 1 rendered at:', styles.star1.left, styles.star1.top)}
-        />
-        <View 
-          style={[styles.star, styles.star2]} 
-          onLayout={() => console.log('Star 2 rendered at:', styles.star2.right, styles.star2.top)}
-        />
-        <View 
-          style={[styles.star, styles.star3]} 
-          onLayout={() => console.log('Star 3 rendered at:', styles.star3.left, styles.star3.top)}
-        />
-        <View 
-          style={[styles.star, styles.star4]} 
-          onLayout={() => console.log('Star 4 rendered at:', styles.star4.right, styles.star4.top)}
-        />
-        <View 
-          style={[styles.star, styles.star5]} 
-          onLayout={() => console.log('Star 5 rendered at:', styles.star5.left, styles.star5.top)}
-        />
+      <View style={styles.starsContainer}>
+        <View style={[styles.star, styles.star1]} />
+        <View style={[styles.star, styles.star2]} />
+        <View style={[styles.star, styles.star3]} />
+        <View style={[styles.star, styles.star4]} />
+        <View style={[styles.star, styles.star5]} />
         <View style={[styles.star, styles.star6]} />
         <View style={[styles.star, styles.star7]} />
         <View style={[styles.star, styles.star8]} />
@@ -138,17 +97,6 @@ const OnboardingWelcomeClean: React.FC<OnboardingWelcomeProps> = ({ onStart, onS
 
       {/* Top Section - Welcome Text */}
       <View style={styles.topSection}>
-        {/* Temporary Skip Button for Testing */}
-        {onSkipToPlan && (
-          <TouchableOpacity 
-            style={styles.tempSkipButton} 
-            onPress={onSkipToPlan}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.tempSkipButtonText}>⚡ Skip to Plan</Text>
-          </TouchableOpacity>
-        )}
-        
         <Text style={styles.welcomeTitle}>Welcome</Text>
         <Text style={styles.welcomeSubtitle}>to Nayl</Text>
         <Text style={styles.tagline}>
@@ -221,9 +169,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1.0,
     shadowRadius: 6,
-    // Debug: Add a border to make stars more visible during development
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   star1: {
     top: '15%',
@@ -672,26 +617,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Temporary Skip Button
-  tempSkipButton: {
-    position: 'absolute',
-    top: height * 0.05, // Adjust as needed
-    right: width * 0.05, // Adjust as needed
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-  },
-
-  tempSkipButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textDecorationLine: 'underline',
-  },
-  
   // Bottom Section
   bottomSection: {
     position: 'absolute',

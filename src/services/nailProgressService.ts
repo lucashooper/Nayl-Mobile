@@ -26,9 +26,13 @@ export interface UploadPhotoParams {
 }
 
 class NailProgressService {
-  private readonly STORAGE_KEY = '@nail_progress_photos';
+  private readonly STORAGE_KEY_BASE = '@nail_progress_photos';
   private readonly BUCKET_NAME = 'nail-progress';
   private localCache: NailProgressPhoto[] | null = null;
+
+  private async getStorageKey(): Promise<string> {
+    return sessionService.getUserStorageKey(this.STORAGE_KEY_BASE);
+  }
 
   /**
    * Upload a nail progress photo
@@ -316,7 +320,8 @@ class NailProgressService {
    */
   private async getLocalCache(): Promise<NailProgressPhoto[]> {
     try {
-      const cached = await AsyncStorage.getItem(this.STORAGE_KEY);
+      const key = await this.getStorageKey();
+      const cached = await AsyncStorage.getItem(key);
       return cached ? JSON.parse(cached) : [];
     } catch (error) {
       console.error('Error reading local cache:', error);
@@ -326,7 +331,8 @@ class NailProgressService {
 
   private async saveLocalCache(photos: NailProgressPhoto[]): Promise<void> {
     try {
-      await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(photos));
+      const key = await this.getStorageKey();
+      await AsyncStorage.setItem(key, JSON.stringify(photos));
     } catch (error) {
       console.error('Error saving local cache:', error);
     }
@@ -334,7 +340,8 @@ class NailProgressService {
 
   private async clearLocalCache(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(this.STORAGE_KEY);
+      const key = await this.getStorageKey();
+      await AsyncStorage.removeItem(key);
     } catch (error) {
       console.error('Error clearing local cache:', error);
     }

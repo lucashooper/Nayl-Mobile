@@ -35,6 +35,15 @@ interface NaylProUpgradeScreenProps {
 
 type PlanId = 'weekly' | 'monthly' | 'yearly';
 
+// Shown only before StoreKit prices load (Expo Go / offline). Production uses localized priceString from Apple.
+const FALLBACK_PRICES: Record<PlanId, string> = {
+  weekly: '$4.99/week',
+  monthly: '$9.99/month',
+  yearly: '$39.99/year',
+};
+
+const WEEKLY_TRIAL_DAYS = 3;
+
 const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
   onUnlockPro,
 }) => {
@@ -51,8 +60,19 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
         if (offering?.availablePackages) {
           const pkgMap: Record<string, PurchasesPackage> = {};
           for (const pkg of offering.availablePackages) {
-            const id = pkg.packageType.toLowerCase();
-            pkgMap[id] = pkg;
+            const productId = pkg.product.identifier.toLowerCase();
+            if (productId.includes('weekly')) {
+              pkgMap.weekly = pkg;
+            } else if (productId.includes('yearly') || productId.includes('annual')) {
+              pkgMap.yearly = pkg;
+            } else if (productId.includes('monthly')) {
+              pkgMap.monthly = pkg;
+            } else {
+              const id = pkg.packageType.toLowerCase();
+              if (id.includes('week')) pkgMap.weekly = pkg;
+              else if (id.includes('month')) pkgMap.monthly = pkg;
+              else if (id.includes('annual') || id.includes('year')) pkgMap.yearly = pkg;
+            }
           }
           setPackages(pkgMap);
         }
@@ -65,13 +85,27 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
 
   const getPriceString = (planId: PlanId): string => {
     const pkg = packages[planId];
-    if (pkg) return pkg.product.priceString;
-    const fallbacks: Record<PlanId, string> = {
-      weekly: '£2.99/week',
-      monthly: '£8.99/month',
-      yearly: '£33.99/year',
-    };
-    return fallbacks[planId];
+    if (pkg?.product?.priceString) return pkg.product.priceString;
+    return FALLBACK_PRICES[planId];
+  };
+
+  const getWeeklyTrialLabel = (): string => {
+    const intro = packages.weekly?.product?.introPrice as
+      | { periodNumberOfUnits?: number; cycles?: number; periodUnit?: string }
+      | null
+      | undefined;
+    const units = intro?.periodNumberOfUnits ?? intro?.cycles;
+    if (units != null && intro?.periodUnit) {
+      return `${units}-${intro.periodUnit.toLowerCase()} free trial`;
+    }
+    return `${WEEKLY_TRIAL_DAYS}-day free trial`;
+  };
+
+  const getPrimaryButtonLabel = (): string => {
+    if (selectedPlan === 'weekly') {
+      return `Start ${WEEKLY_TRIAL_DAYS}-day free trial`;
+    }
+    return 'Subscribe now';
   };
 
   // Animation values for entrance animations
@@ -244,7 +278,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
             Unlock Nayl Pro
           </Text>
           <Text style={styles.subHeadline}>
-            Invest in yourself
+            Premium tools for lasting change
           </Text>
         </Animated.View>
 
@@ -254,12 +288,9 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
             <Image
               source={require('../../assets/onboarding-icons/Nayl-cooler-logo.webp')}
               style={styles.appIcon}
-              resizeMode="contain"
+              resizeMode="cover"
             />
           </View>
-          <Text style={styles.iconSubtext}>
-            Premium tools for lasting change
-          </Text>
         </Animated.View>
 
         {/* Premium Features Showcase */}
@@ -342,6 +373,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 </View>
                 <Text style={styles.purchaseOptionTitle}>Weekly</Text>
                 <Text style={styles.purchaseOptionPrice}>{getPriceString('weekly')}</Text>
+                <Text style={styles.purchaseOptionSavings}>{getWeeklyTrialLabel()}</Text>
               </TouchableOpacity>
 
               {/* Yearly Option */}
@@ -382,15 +414,10 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 {isPurchasing ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.buttonText}>Start rewiring now</Text>
+                  <Text style={styles.buttonText}>{getPrimaryButtonLabel()}</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
-
-            {/* Auto-renewal disclosure (required by Guideline 3.1.2) */}
-            <Text style={styles.subscriptionDisclosure}>
-              {`${getPriceString(selectedPlan)} · Auto-renews unless cancelled 24h before period ends. Manage in Apple ID Settings.`}
-            </Text>
 
             {/* Footer Links */}
             <View style={styles.footerLinks}>
@@ -440,59 +467,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   mainHeadline: {
-    fontSize: 34,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 44,
-    letterSpacing: 0.5,
-    marginBottom: 12,
+    lineHeight: 40,
+    letterSpacing: -0.5,
+    marginBottom: 8,
     zIndex: 10,
   },
   subHeadline: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.65)',
     textAlign: 'center',
-    lineHeight: 28,
-    letterSpacing: 0.3,
+    lineHeight: 24,
+    letterSpacing: 0.1,
     zIndex: 10,
   },
   iconSection: {
     alignItems: 'center',
     zIndex: 10,
-    marginBottom: 0,
+    marginBottom: 8,
     paddingHorizontal: 24,
   },
   iconGlowContainer: {
-    width: 130,
-    height: 130,
-    borderRadius: 28,
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    width: 120,
+    height: 120,
+    borderRadius: 32,
+    backgroundColor: 'rgba(124, 58, 237, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 8,
-    marginBottom: 20,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 6,
+    overflow: 'hidden',
   },
   appIcon: {
-    width: 110,
-    height: 110,
-  },
-  iconSubtext: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#94A3B8',
-    textAlign: 'center',
-    lineHeight: 24,
-    letterSpacing: 0.2,
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    zIndex: 10,
+    width: 104,
+    height: 104,
+    borderRadius: 26,
   },
   purchaseSection: {
     zIndex: 10,
@@ -529,15 +545,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.8,
+    letterSpacing: 0.3,
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    zIndex: 10,
   },
   purchaseOptionsContainer: {
     width: '100%',
@@ -617,15 +629,6 @@ const styles = StyleSheet.create({
   },
   unlockButtonDisabled: {
     opacity: 0.7,
-  },
-  subscriptionDisclosure: {
-    fontSize: 11,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 16,
-    marginTop: 10,
-    marginBottom: 6,
-    paddingHorizontal: 8,
   },
   footerLinks: {
     flexDirection: 'row',

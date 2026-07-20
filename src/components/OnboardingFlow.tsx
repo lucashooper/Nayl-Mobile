@@ -4,13 +4,12 @@ import OnboardingQuiz from './OnboardingQuiz';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
-  onSkip: () => void;
 }
 
-const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onSkip }) => {
+const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   return (
     <View style={styles.container}>
-      <OnboardingQuiz onComplete={onComplete} onSkip={onSkip} />
+      <OnboardingQuiz onComplete={onComplete} />
     </View>
   );
 };

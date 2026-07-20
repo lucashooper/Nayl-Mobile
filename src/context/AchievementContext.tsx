@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import sessionService, { USER_SESSION_CHANGED } from '../services/sessionService';
+import { DeviceEventEmitter } from 'react-native';
+
+const ACHIEVEMENTS_STORAGE_BASE = 'achievements';
 
 export interface Achievement {
   id: string;
@@ -25,9 +29,6 @@ interface AchievementContextType {
   hideAchievementOverlay: () => void;
   checkAndUnlockAchievements: (progressData: any) => void;
   getAchievementProgress: (achievementId: string) => number;
-  testAchievement: () => void; // Test function to manually trigger an achievement
-  unlockNextAchievement: () => void; // Function to unlock the next locked achievement
-  resetAllAchievements: () => void; // Function to reset all achievements for testing
 }
 
 const AchievementContext = createContext<AchievementContextType | undefined>(undefined);
@@ -122,14 +123,31 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Use ref to store the showAchievementOverlay function to avoid circular dependency
   const showAchievementOverlayRef = useRef<((achievementId: string) => void) | null>(null);
 
-  // Load achievements from storage
+  // Load achievements from storage when user session is available
   useEffect(() => {
     loadAchievements();
+
+    const subscription = DeviceEventEmitter.addListener(
+      USER_SESSION_CHANGED,
+      () => {
+        setAchievements(DEFAULT_ACHIEVEMENTS);
+        loadAchievements();
+      },
+    );
+
+    return () => subscription.remove();
   }, []);
 
   const loadAchievements = async () => {
     try {
-      const stored = await AsyncStorage.getItem('achievements');
+      const hasUser = await sessionService.hasUser();
+      if (!hasUser) {
+        setAchievements(DEFAULT_ACHIEVEMENTS);
+        return;
+      }
+
+      const key = await sessionService.getUserStorageKey(ACHIEVEMENTS_STORAGE_BASE);
+      const stored = await AsyncStorage.getItem(key);
       if (stored) {
         const loadedAchievements = JSON.parse(stored);
         // Ensure all default achievements are present, merge with stored data
@@ -148,7 +166,8 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const saveAchievements = async (newAchievements: Achievement[]) => {
     try {
-      await AsyncStorage.setItem('achievements', JSON.stringify(newAchievements));
+      const key = await sessionService.getUserStorageKey(ACHIEVEMENTS_STORAGE_BASE);
+      await AsyncStorage.setItem(key, JSON.stringify(newAchievements));
     } catch (error) {
       console.error('Failed to save achievements:', error);
     }
@@ -244,68 +263,6 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return achievement ? achievement.progress : 0;
   }, [achievements]);
 
-  // Test function to manually trigger an achievement for testing
-  const testAchievement = useCallback(() => {
-    console.log('🧪 Testing achievement overlay...');
-    const testAchievement = achievements.find(a => a.id === 'sprout');
-    if (testAchievement) {
-      console.log('🎯 Testing with achievement:', testAchievement.title);
-      showAchievementOverlay('sprout');
-    } else {
-      console.log('❌ Test achievement not found');
-    }
-  }, [achievements, showAchievementOverlay]);
-
-  // Function to unlock the next locked achievement
-  const unlockNextAchievement = useCallback(() => {
-    const nextLockedAchievement = achievements.find(a => !a.isUnlocked);
-    if (nextLockedAchievement) {
-      console.log('🔓 Unlocking next achievement:', nextLockedAchievement.title);
-      
-      // Update the achievement to unlocked
-      setAchievements(prevAchievements => {
-        const updatedAchievements = prevAchievements.map(a => 
-          a.id === nextLockedAchievement.id 
-            ? { ...a, isUnlocked: true, progress: a.maxProgress, unlockedAt: new Date() }
-            : a
-        );
-        
-        // Save to storage
-        saveAchievements(updatedAchievements);
-        return updatedAchievements;
-      });
-      
-      // Show the achievement overlay
-      setTimeout(() => {
-        showAchievementOverlay(nextLockedAchievement.id);
-      }, 100);
-    } else {
-      console.log('🎉 All achievements are already unlocked!');
-    }
-  }, [achievements, showAchievementOverlay]);
-
-  // Function to reset all achievements for testing
-  const resetAllAchievements = useCallback(() => {
-    console.log('🔄 Resetting all achievements for testing...');
-    
-    setAchievements(prevAchievements => {
-      const resetAchievements = prevAchievements.map(a => ({
-        ...a,
-        isUnlocked: false,
-        progress: 0,
-        unlockedAt: undefined
-      }));
-      
-      // Save to storage
-      saveAchievements(resetAchievements);
-      return resetAchievements;
-    });
-    
-    // Hide any current overlay
-    setIsOverlayVisible(false);
-    setCurrentOverlay(null);
-  }, []);
-
   const unlockedAchievements = achievements.filter(a => a.isUnlocked);
 
   return (
@@ -319,9 +276,6 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
         hideAchievementOverlay,
         checkAndUnlockAchievements,
         getAchievementProgress,
-        testAchievement,
-        unlockNextAchievement,
-        resetAllAchievements,
       }}
     >
       {children}

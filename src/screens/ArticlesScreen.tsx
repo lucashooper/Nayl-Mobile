@@ -11,6 +11,13 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import sessionService from '../services/sessionService';
+
+const COMPLETED_ARTICLES_BASE = 'completedArticles';
+
+async function getCompletedArticlesKey(): Promise<string> {
+  return sessionService.getUserStorageKey(COMPLETED_ARTICLES_BASE);
+}
 import { useFocusEffect } from '@react-navigation/native';
 import { useDimensions } from '../hooks/useDimensions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -96,7 +103,8 @@ const ArticlesScreen: React.FC = () => {
 
   const loadCompletedArticles = async () => {
     try {
-      const stored = await AsyncStorage.getItem('completedArticles');
+      const key = await getCompletedArticlesKey();
+      const stored = await AsyncStorage.getItem(key);
       if (stored) {
         const completed = new Set(JSON.parse(stored) as string[]);
         setCompletedArticles(completed);
@@ -408,13 +416,6 @@ const ArticlesScreen: React.FC = () => {
                </LinearGradient>
              </TouchableOpacity>
 
-            {/* Placeholder for future articles */}
-            <View style={styles.placeholderCard}>
-              <View style={styles.placeholderContent}>
-                <Ionicons name="add-circle-outline" size={32} color={colors.mutedText} />
-                <Text style={styles.placeholderText}>More articles coming soon</Text>
-              </View>
-            </View>
           </ScrollView>
         </View>
 

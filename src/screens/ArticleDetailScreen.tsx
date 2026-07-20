@@ -11,6 +11,13 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import sessionService from '../services/sessionService';
+
+const COMPLETED_ARTICLES_BASE = 'completedArticles';
+
+async function getCompletedArticlesKey(): Promise<string> {
+  return sessionService.getUserStorageKey(COMPLETED_ARTICLES_BASE);
+}
 import { useDimensions } from '../hooks/useDimensions';
 import { useTheme } from '../context/ThemeContext';
 import { useAchievements } from '../context/AchievementContext';
@@ -117,7 +124,8 @@ const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({ navigation, r
 
   const checkCompletionStatus = async () => {
     try {
-      const stored = await AsyncStorage.getItem('completedArticles');
+      const key = await getCompletedArticlesKey();
+      const stored = await AsyncStorage.getItem(key);
       if (stored) {
         const completed = new Set(JSON.parse(stored) as string[]);
         setIsCompleted(completed.has(articleId));
@@ -133,7 +141,8 @@ const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({ navigation, r
 
   const handleMarkComplete = async () => {
     try {
-      const stored = await AsyncStorage.getItem('completedArticles');
+      const key = await getCompletedArticlesKey();
+      const stored = await AsyncStorage.getItem(key);
       let completed = new Set<string>();
       
       if (stored) {
@@ -149,7 +158,7 @@ const ArticleDetailScreen: React.FC<ArticleDetailScreenProps> = ({ navigation, r
       }
       
       // Save updated completion status
-      await AsyncStorage.setItem('completedArticles', JSON.stringify(Array.from(completed)));
+      await AsyncStorage.setItem(key, JSON.stringify(Array.from(completed)));
       
       // Update local state
       setIsCompleted(!isCompleted);

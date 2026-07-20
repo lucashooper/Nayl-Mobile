@@ -9,6 +9,7 @@ import {
   Dimensions,
   Animated,
   StyleSheet,
+  DeviceEventEmitter,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -34,7 +35,7 @@ import { useTipsModal } from '../context/TipsModalContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import triggerService from '../services/triggerService';
-import sessionService from '../services/sessionService';
+import sessionService, { USER_SESSION_CHANGED } from '../services/sessionService';
 import { typography, body, bodySmall, caption, buttonText, timerText, timerLabel } from '../constants/typography';
 import ProfileHeader from '../components/ProfileHeader';
 import { UserDashboard } from '../lib/supabase';
@@ -140,6 +141,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   // Load dashboard: use cached data instantly, then sync from network
   const loadDashboardData = useCallback(async () => {
     try {
+      const hasUser = await sessionService.hasUser();
+      if (!hasUser) {
+        setDashboardData(null);
+        setConsecutiveDays(0);
+        setWeeklyCheckIns(Array(7).fill(false));
+        setIsInitialized(true);
+        setIsLoading(false);
+        return;
+      }
+
       const applyDashboard = (data: NonNullable<Awaited<ReturnType<typeof sessionService.getDashboardData>>>) => {
         setDashboardData(data);
         setConsecutiveDays(data.consecutive_days);
@@ -173,19 +184,28 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    // Start session and mark check-in in background (non-blocking)
-    sessionService.startSession().catch(error => {
-      console.warn('Failed to start session:', error);
-    });
-    
-    sessionService.markTodayCheckedIn().catch(error => {
-      console.warn('Failed to mark today checked in:', error);
-    });
+    const bootstrap = async () => {
+      const hasUser = await sessionService.hasUser();
+      if (!hasUser) return;
+
+      sessionService.startSession().catch(error => {
+        console.warn('Failed to start session:', error);
+      });
+
+      sessionService.markTodayCheckedIn().catch(error => {
+        console.warn('Failed to mark today checked in:', error);
+      });
+    };
+
+    bootstrap();
 
     // NEW: Check if today should be marked as successful (no episodes)
     // This ensures the weekly check-ins reflect actual successful days
     const checkTodaySuccess = async () => {
       try {
+        const hasUser = await sessionService.hasUser();
+        if (!hasUser) return;
+
         const today = new Date().toISOString().split('T')[0];
         // Check if there were any episodes today
         const triggerHistory = await triggerService.getTriggerHistory();
@@ -206,6 +226,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
     // Load dashboard data immediately
     loadDashboardData();
+  }, [loadDashboardData]);
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener(
+      USER_SESSION_CHANGED,
+      () => {
+        loadDashboardData();
+      },
+    );
+    return () => subscription.remove();
   }, [loadDashboardData]);
 
   // NEW: Refresh data when screen comes into focus
@@ -439,15 +469,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       // Set the claimable state
       setIsDayCompleteAndUnclaimed(true);
       setLastCompletedDay(currentDay);
-      
-      console.log('🎉 Day completed! Ready for claim.');
-    }
-    
-    // Debug: For testing, enable claimable state after 10 seconds
-    if (elapsedSeconds >= 10 && !isDayCompleteAndUnclaimed && lastCompletedDay === 0) {
-      console.log('🧪 TEST MODE: Enabling claimable state for testing');
-      setIsDayCompleteAndUnclaimed(true);
-      setLastCompletedDay(1);
     }
   }, [elapsedSeconds, isInitialized, lastCompletedDay, isDayCompleteAndUnclaimed]);
 
@@ -556,8 +577,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       
       // Reset the claimable state
       setIsDayCompleteAndUnclaimed(false);
-      
-      console.log('⚡ Day claimed!');
     } catch (error) {
       console.error('Error claiming day:', error);
     }
@@ -604,37 +623,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
       {/* Main Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Test Onboarding Buttons - Remove these later */}
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: SPACING.md, marginTop: 20 }}>
-          <TouchableOpacity 
-            style={{
-              backgroundColor: '#8A2BE2',
-              paddingVertical: 12,
-              paddingHorizontal: 20,
-              borderRadius: 12,
-            }}
-            onPress={() => navigation.navigate('OnboardingTest')}
-          >
-            <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>
-              🧪 Test Slide
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{
-              backgroundColor: '#3B82F6',
-              paddingVertical: 12,
-              paddingHorizontal: 20,
-              borderRadius: 12,
-            }}
-            onPress={() => navigation.navigate('OnboardingFlow')}
-          >
-            <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>
-              🎯 Full Flow
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Header */}
         <View style={styles.header}>
                           <ProfileHeader size="medium" navigation={navigation} showName={true} />

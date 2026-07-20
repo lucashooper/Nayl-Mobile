@@ -1,4 +1,4 @@
-package com.nayl.app
+package app.nayl.mobile
 
 import android.app.Application
 import android.content.res.Configuration

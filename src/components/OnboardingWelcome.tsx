@@ -24,22 +24,11 @@ const { width, height } = Dimensions.get('window');
 interface OnboardingWelcomeProps {
   onStart: () => void;
   onLogin: () => void;
-  onSkipToPlan?: () => void; // New prop for skipping to plan
   isEmbedded?: boolean;
   isVisible?: boolean;
 }
 
-const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin, onSkipToPlan, isEmbedded = false, isVisible = true }) => {
-  // Debug logging for star visibility
-  React.useEffect(() => {
-    console.log('OnboardingWelcome: Component mounted, stars should be visible');
-    console.log('isEmbedded:', isEmbedded);
-    console.log('isVisible:', isVisible);
-    console.log('Stars container style:', styles.starsContainer);
-    console.log('Base star style:', styles.star);
-    console.log('Sample star1 style:', styles.star1);
-  }, [isEmbedded, isVisible]);
-
+const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin, isEmbedded = false, isVisible = true }) => {
   // Animation values for staggered loading sequence
   const titleOpacity = useSharedValue(0);
   const titleTranslateY = useSharedValue(-30);
@@ -165,10 +154,7 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
               {/* Subtle Floating Stars - Only in bottom half to avoid distracting from text */}
-        <View 
-          style={styles.starsContainer}
-          onLayout={() => console.log('Stars container layout completed')}
-        >
+        <View style={styles.starsContainer}>
           <View style={[styles.star, styles.star4]} />
           <View style={[styles.star, styles.star5]} />
           <View style={[styles.star, styles.star6]} />
@@ -193,17 +179,6 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
           <View style={[styles.star, styles.star45]} />
           <View style={[styles.star, styles.star50]} />
         </View>
-      
-      {/* Temporary Skip Button for Testing */}
-      {onSkipToPlan && (
-        <TouchableOpacity 
-          style={styles.tempSkipButton} 
-          onPress={onSkipToPlan}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.tempSkipButtonText}>⚡ Skip to Plan</Text>
-        </TouchableOpacity>
-      )}
       
       {/* Main Content Section */}
       <View style={styles.contentSection}>
@@ -815,29 +790,6 @@ const styles = StyleSheet.create({
     shadowColor: '#3B82F6',
   },
 
-  tempSkipButton: {
-    position: 'absolute',
-    top: 80, // Position below status bar
-    right: 20, // Position on the right side
-    backgroundColor: 'rgba(236, 72, 153, 0.9)', // Semi-transparent pink
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 25,
-    zIndex: 1000, // High z-index to be above other elements
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    shadowColor: '#EC4899',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  tempSkipButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
 });
 
 export default OnboardingWelcome;

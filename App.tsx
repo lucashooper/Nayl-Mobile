@@ -45,6 +45,7 @@ import { COLORS } from './src/constants/theme';
 import hapticService, { HapticType, HapticIntensity } from './src/services/hapticService';
 import { preloadCriticalAssets, preloadDeferredAssets } from './src/utils/assetPreloader';
 import AppLoadingScreen from './src/components/AppLoadingScreen';
+import iapService from './src/services/iapService';
 
 const Tab = createBottomTabNavigator();
 
@@ -82,8 +83,9 @@ function AppContent() {
           const currentRoute = state.routes[state.index];
           if (currentRoute?.state?.routes && currentRoute.state.index !== undefined) {
             const currentStackRoute = currentRoute.state.routes[currentRoute.state.index];
-            const isOnboarding = currentStackRoute?.name && 
-              ['OnboardingQuestionnaire', 'OnboardingTest', 'OnboardingFlow'].includes(currentStackRoute.name);
+            const isOnboarding = currentStackRoute?.name &&
+              (currentStackRoute.name === 'OnboardingQuestionnaire' ||
+                currentStackRoute.name === 'Onboarding');
             
             setIsOnboardingScreen(isOnboarding || false);
           }
@@ -338,6 +340,7 @@ export default function App() {
             'Inter': require('./assets/fonts/Inter-Regular.ttf'),
           }),
           preloadCriticalAssets(),
+          iapService.initialize(),
         ]);
       } catch (error) {
         console.log('Resource loading error:', error);

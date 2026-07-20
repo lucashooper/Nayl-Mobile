@@ -32,10 +32,11 @@ const { width, height } = Dimensions.get('window');
 
 interface OnboardingQuizProps {
   onComplete: () => void;
-  onSkip: () => void;
 }
 
-const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete, onSkip }) => {
+const QUIZ_FIRST_PAGE_INDEX = 3;
+
+const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string | string[]>>({});
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -297,6 +298,8 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete, onSkip }) =
     },
   ];
 
+  const nameInputPageIndex = QUIZ_FIRST_PAGE_INDEX + quizQuestions.length;
+
   // Total number of onboarding screens
   const totalScreens = 4 + quizQuestions.length + 8; // Welcome, Info, Quiz Intro, Quiz Questions (now 8), Name Input, Personalizing, Consequences, Dependency Score, Key Milestones, Commitment, Personalized Plan, Nayl Pro Upgrade
 
@@ -367,12 +370,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete, onSkip }) =
 
   const handleWelcomeSkip = () => {
     hapticService.trigger(HapticType.LIGHT_TAP, HapticIntensity.SUBTLE);
-    onSkip();
-  };
-
-  const handleSkipToPlan = () => {
-    hapticService.trigger(HapticType.SUCCESS, HapticIntensity.NORMAL);
-    goToPage(17); // Skip directly to Personalized Plan Screen
+    goToPage(nameInputPageIndex);
   };
 
   const handleQuizAnswer = (questionId: string, answerId: string) => {
@@ -427,9 +425,9 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete, onSkip }) =
     }
   };
 
-  const handleSkip = () => {
+  const handleSkipQuiz = () => {
     hapticService.trigger(HapticType.LIGHT_TAP, HapticIntensity.SUBTLE);
-    onSkip();
+    goToPage(nameInputPageIndex);
   };
 
   const handleComplete = () => {
@@ -599,7 +597,6 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete, onSkip }) =
               key="welcome-visible"
               onStart={handleWelcomeStart}
               onLogin={handleWelcomeSkip}
-              onSkipToPlan={handleSkipToPlan}
               isEmbedded={true}
               isVisible={currentPage === 0}
             />
@@ -921,7 +918,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete, onSkip }) =
                 <View style={styles.skipButtonContainer}>
                   <TouchableOpacity 
                     style={styles.skipButton} 
-                    onPress={handleSkip}
+                    onPress={handleSkipQuiz}
                   >
                     <Text style={styles.skipText}>Skip test</Text>
                   </TouchableOpacity>

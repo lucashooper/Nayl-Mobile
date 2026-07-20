@@ -1,14 +1,32 @@
 import { supabase, UserSession, UserStats, UserStatsPartial, UserDashboard, UserAnalytics } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DeviceEventEmitter } from 'react-native';
 
 const SESSION_KEY = '@nayl_current_session';
 const USER_ID_KEY = '@nayl_user_id';
 const DASHBOARD_CACHE_KEY = '@nayl_dashboard_cache';
 
+export const USER_SESSION_CHANGED = 'nayl_user_session_changed';
+
+/** Build a per-user AsyncStorage key so accounts don't share local data */
+export function userStorageKey(base: string, userId: string): string {
+  return `${base}:${userId}`;
+}
+
 class SessionService {
   private currentUserId: string | null = null;
 
-  // Initialize user ID (for demo purposes, you might want to implement proper auth later)
+  private emitSessionChange(userId: string | null): void {
+    DeviceEventEmitter.emit(USER_SESSION_CHANGED, userId);
+  }
+
+  async hasUser(): Promise<boolean> {
+    if (this.currentUserId) return true;
+    const userId = await AsyncStorage.getItem(USER_ID_KEY);
+    return userId != null;
+  }
+
+  // Create or restore the active user — call after onboarding completes
   async initializeUser(): Promise<string> {
     try {
       let userId = await AsyncStorage.getItem(USER_ID_KEY);
@@ -17,6 +35,7 @@ class SessionService {
         await AsyncStorage.setItem(USER_ID_KEY, userId);
       }
       this.currentUserId = userId;
+      this.emitSessionChange(userId);
       return userId;
     } catch (error) {
       console.error('Error initializing user:', error);
@@ -24,12 +43,59 @@ class SessionService {
     }
   }
 
-  // Get current user ID
+  // Get current user ID — throws if no active session (e.g. during onboarding)
   async getCurrentUserId(): Promise<string> {
-    if (!this.currentUserId) {
-      return await this.initializeUser();
+    if (this.currentUserId) {
+      return this.currentUserId;
     }
-    return this.currentUserId;
+    const userId = await AsyncStorage.getItem(USER_ID_KEY);
+    if (!userId) {
+      throw new Error('No active user session');
+    }
+    this.currentUserId = userId;
+    return userId;
+  }
+
+  async getUserStorageKey(base: string): Promise<string> {
+    const userId = await this.getCurrentUserId();
+    return userStorageKey(base, userId);
+  }
+
+  // Log out — clears local session; user must complete onboarding again
+  async logout(): Promise<void> {
+    const storedUserId =
+      this.currentUserId ?? (await AsyncStorage.getItem(USER_ID_KEY));
+
+    this.currentUserId = null;
+
+    const keysToRemove = new Set<string>([USER_ID_KEY, SESSION_KEY, DASHBOARD_CACHE_KEY]);
+
+    // Per-user scoped keys
+    if (storedUserId) {
+      const scopedBases = [
+        DASHBOARD_CACHE_KEY,
+        '@nayl_profile_cache',
+        '@nayl_is_pro',
+        '@nail_progress_photos',
+        'achievements',
+        'completedArticles',
+        '@nayl_progress_ring_colors',
+      ];
+      for (const base of scopedBases) {
+        keysToRemove.add(userStorageKey(base, storedUserId));
+      }
+    }
+
+    // Legacy global keys (pre user-scoping migration)
+    keysToRemove.add('@nayl_profile_cache');
+    keysToRemove.add('@nayl_is_pro');
+    keysToRemove.add('@nail_progress_photos');
+    keysToRemove.add('achievements');
+    keysToRemove.add('completedArticles');
+    keysToRemove.add('@nayl_progress_ring_colors');
+
+    await AsyncStorage.multiRemove([...keysToRemove]);
+    this.emitSessionChange(null);
   }
 
   // Start or resume a session
@@ -728,7 +794,8 @@ class SessionService {
 
   async cacheDashboard(data: UserDashboard): Promise<void> {
     try {
-      await AsyncStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(data));
+      const key = await this.getUserStorageKey(DASHBOARD_CACHE_KEY);
+      await AsyncStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
       console.warn('Failed to cache dashboard:', error);
     }
@@ -737,7 +804,8 @@ class SessionService {
   // Read last-known dashboard from cache (never returns stale mock data)
   async getLocalDashboard(): Promise<UserDashboard | null> {
     try {
-      const cached = await AsyncStorage.getItem(DASHBOARD_CACHE_KEY);
+      const key = await this.getUserStorageKey(DASHBOARD_CACHE_KEY);
+      const cached = await AsyncStorage.getItem(key);
       if (cached) {
         return JSON.parse(cached) as UserDashboard;
       }

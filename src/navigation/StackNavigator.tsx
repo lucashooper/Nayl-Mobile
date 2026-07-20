@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Easing } from 'react-native';
+import sessionService from '../services/sessionService';
 
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
@@ -15,8 +16,7 @@ import LearningScreen from '../screens/LearningScreen';
 import ArticlesScreen from '../screens/ArticlesScreen';
 import ArticleDetailScreen from '../screens/ArticleDetailScreen';
 import OnboardingQuestionnaireScreen from '../screens/OnboardingQuestionnaireScreen';
-import OnboardingTestScreen from '../screens/OnboardingTestScreen';
-import OnboardingFlowTestScreen from '../screens/OnboardingFlowTestScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import EditStreakScreen from '../screens/EditStreakScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import NailProgressScreen from '../screens/NailProgressScreen';
@@ -51,12 +51,30 @@ const screenTransitionConfig = {
 
 // Home stack with standardized transitions
 export function HomeStack() {
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+
+  useEffect(() => {
+    sessionService.hasUser().then((hasUser) => {
+      setInitialRoute(hasUser ? 'HomeMain' : 'Onboarding');
+    });
+  }, []);
+
+  if (!initialRoute) {
+    return null;
+  }
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, ...screenTransitionConfig }}>
+    <Stack.Navigator
+      initialRouteName={initialRoute}
+      screenOptions={{ headerShown: false, ...screenTransitionConfig }}
+    >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
+      <Stack.Screen
+        name="Onboarding"
+        component={OnboardingScreen}
+        options={{ gestureEnabled: false }}
+      />
       <Stack.Screen name="OnboardingQuestionnaire" component={OnboardingQuestionnaireScreen} />
-      <Stack.Screen name="OnboardingTest" component={OnboardingTestScreen} />
-      <Stack.Screen name="OnboardingFlow" component={OnboardingFlowTestScreen} />
       <Stack.Screen name="EditStreak" component={EditStreakScreen} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} />
       <Stack.Screen name="Meditation" component={MeditationScreen} />

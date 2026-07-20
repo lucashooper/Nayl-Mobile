@@ -1,10 +1,11 @@
 {
   "expo": {
     "name": "Nayl",
-    "slug": "NaylApp-Expo",
+    "slug": "nayl",
+    "owner": "crupid2s-organization",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/Nayl-cooler-logo.webp",
+    "icon": "./assets/Nayl-cooler-logo.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -16,13 +17,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nayl.app",
+      "bundleIdentifier": "app.nayl.mobile",
       "buildNumber": "1",
       "infoPlist": {
         "NSCameraUsageDescription": "Nayl uses your camera so you can take photos to track your nail progress over time.",
         "NSPhotoLibraryUsageDescription": "Nayl accesses your photo library so you can choose photos to track your nail progress and set a profile picture.",
         "NSPhotoLibraryAddUsageDescription": "Nayl saves nail progress photos to your photo library.",
-        "NSMicrophoneUsageDescription": "Nayl uses your microphone for guided meditation and relaxation audio features."
+        "NSMicrophoneUsageDescription": "Nayl uses your microphone for guided meditation and relaxation audio features.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "usesAppleSignIn": false
     },
@@ -31,16 +33,14 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.nayl.app"
+      "package": "app.nayl.mobile",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
-      "favicon": "./assets/Nayl-cooler-logo.webp"
+      "favicon": "./assets/favicon.png"
     },
-    "fonts": [
-      {
-        "asset": "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
-      }
-    ],
     "plugins": [
       "expo-font",
       "expo-video",
@@ -51,6 +51,11 @@
           "cameraPermission": "Nayl uses your camera so you can take photos to track your nail progress over time."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7fcf64d6-2d47-49fe-9026-26220df8b813"
+      }
+    }
   }
 }

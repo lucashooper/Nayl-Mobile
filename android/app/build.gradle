@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.nayl.app'
+    namespace 'app.nayl.mobile'
     defaultConfig {
-        applicationId 'com.nayl.app'
+        applicationId 'app.nayl.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

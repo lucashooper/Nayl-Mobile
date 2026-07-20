@@ -48,9 +48,6 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
   const testimonialOpacity = useSharedValue(0);
   const testimonialTranslateY = useSharedValue(40);
   
-  const discountOpacity = useSharedValue(0);
-  const discountTranslateY = useSharedValue(40);
-  
   const ctaOpacity = useSharedValue(0);
   const ctaTranslateY = useSharedValue(40);
 
@@ -96,13 +93,7 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
         testimonialTranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
       }, 1100);
 
-      // Discount animation (1250ms delay)
-      setTimeout(() => {
-        discountOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
-        discountTranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
-      }, 1250);
-
-      // CTA animation (1400ms delay)
+      // CTA animation (1300ms delay)
       setTimeout(() => {
         ctaOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
         ctaTranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
@@ -138,11 +129,6 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
   const testimonialStyle = useAnimatedStyle(() => ({
     opacity: testimonialOpacity.value,
     transform: [{ translateY: testimonialTranslateY.value }],
-  }));
-
-  const discountStyle = useAnimatedStyle(() => ({
-    opacity: discountOpacity.value,
-    transform: [{ translateY: discountTranslateY.value }],
   }));
 
   const ctaStyle = useAnimatedStyle(() => ({
@@ -445,24 +431,6 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
             "I've been biting my nails for 20 years and thought I'd never stop. Nayl's tools and community helped me finally quit for good."
           </Text>
           <Text style={styles.testimonialAuthor}>- Jessica P. (28F)</Text>
-        </Animated.View>
-
-        {/* Special Discount Section */}
-        <Animated.View style={[styles.discountSection, discountStyle]}>
-          <View style={styles.discountCard}>
-            <LinearGradient
-              colors={['#3B82F6', '#8B5CF6']}
-              style={styles.discountGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.discountTitle}>Special Discount!</Text>
-              <Text style={styles.discountText}>Get 80% off Nayl Pro</Text>
-              <TouchableOpacity style={styles.claimNowButton} activeOpacity={0.8}>
-                <Text style={styles.claimNowButtonText}>Claim Now</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-          </View>
         </Animated.View>
 
         {/* Final Call-to-Action */}

@@ -1,0 +1,9 @@
+# Use Prebuild (CNG) — exclude committed native folders
+/android
+/ios
+
+# Reduce upload size
+../marketing-website/
+.git/
+*.md
+!README.md
