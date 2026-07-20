@@ -7,10 +7,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useAchievements } from '../context/AchievementContext';
-import { SPACING } from '../constants/theme';
-import { typography } from '../constants/typography';
+import { TYPOGRAPHY, SPACING } from '../constants/theme';
 import profileService, { ProfileData } from '../services/profileService';
 import sessionService, { USER_SESSION_CHANGED } from '../services/sessionService';
+import authService from '../services/authService';
+import iapService from '../services/iapService';
 
 const PRIVACY_POLICY_URL = 'https://nayl.app/privacy';
 const TERMS_URL = 'https://nayl.app/terms';
@@ -40,9 +41,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     total_days_logged_in: 0
   });
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
+  const [authProvider, setAuthProvider] = useState<string | null>(null);
   const [showNameEditModal, setShowNameEditModal] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   
   // Check if theme context is ready
   if (!isReady || !colors) {
@@ -56,6 +60,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   // Load basic profile data on mount
   useEffect(() => {
     loadBasicProfileData();
+    loadAccountInfo();
 
     const subscription = DeviceEventEmitter.addListener(
       USER_SESSION_CHANGED,
@@ -68,14 +73,44 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             total_days_logged_in: 0,
           });
           setProfileImage(null);
+          setAccountEmail(null);
+          setAuthProvider(null);
         } else {
           loadBasicProfileData();
+          loadAccountInfo();
         }
       },
     );
 
     return () => subscription.remove();
   }, []);
+
+  const loadAccountInfo = async () => {
+    try {
+      const user = await authService.getCurrentUser();
+      if (!user) {
+        setAccountEmail(null);
+        setAuthProvider(null);
+        return;
+      }
+
+      setAccountEmail(user.email ?? null);
+
+      const provider =
+        user.app_metadata?.provider ??
+        user.identities?.[0]?.provider ??
+        null;
+      if (provider === 'google') {
+        setAuthProvider('Google');
+      } else if (provider === 'apple') {
+        setAuthProvider('Apple');
+      } else {
+        setAuthProvider(provider ? provider.charAt(0).toUpperCase() + provider.slice(1) : 'Email');
+      }
+    } catch (error) {
+      console.error('Error loading account info:', error);
+    }
+  };
 
   const loadBasicProfileData = async () => {
     try {
@@ -208,6 +243,63 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     }
   };
 
+  const resetToOnboarding = () => {
+    navigation.getParent()?.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'Home',
+            state: {
+              index: 0,
+              routes: [{ name: 'Onboarding' }],
+            },
+          },
+        ],
+      }),
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes your account, streak data, journal entries, and progress photos. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Are you sure?',
+              'All of your Nayl data will be permanently removed.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Forever',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      setIsDeletingAccount(true);
+                      await authService.deleteAccount();
+                      await iapService.logOut();
+                      resetToOnboarding();
+                    } catch (error) {
+                      console.error('Account deletion error:', error);
+                      Alert.alert('Error', 'Could not delete your account. Please try again or contact support@nayl.app.');
+                    } finally {
+                      setIsDeletingAccount(false);
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  };
+
   const handleLogout = () => {
     Alert.alert(
       'Log Out',
@@ -221,20 +313,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             try {
               setIsLoggingOut(true);
               await sessionService.logout();
-              navigation.getParent()?.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: 'Home',
-                      state: {
-                        index: 0,
-                        routes: [{ name: 'Onboarding' }],
-                      },
-                    },
-                  ],
-                }),
-              );
+              await authService.signOut();
+              await iapService.logOut();
+              resetToOnboarding();
             } catch (error) {
               Alert.alert('Error', 'Could not log out. Please try again.');
             } finally {
@@ -335,20 +416,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           </TouchableOpacity>
           
           {/* Centered title */}
-          <Text style={{ 
-            ...typography.displayMedium,
+          <Text style={{
+            ...TYPOGRAPHY.headingLarge,
             color: colors.primaryText,
             textAlign: 'center',
-            fontSize: 36,
-            fontWeight: '700',
-            letterSpacing: 0.5,
-            textShadowColor: colors.primaryBackground,
-            textShadowOffset: { width: 0, height: 1 },
-            textShadowRadius: 2,
-            shadowColor: colors.primaryAccent,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.1,
-            shadowRadius: 1,
+            textShadowColor: 'rgba(0, 0, 0, 0.5)',
+            textShadowOffset: { width: 0, height: 2 },
+            textShadowRadius: 4,
           }}>Profile</Text>
         </View>
       </View>
@@ -797,6 +871,54 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           </LinearGradient>
         </View>
 
+        {/* Account */}
+        {accountEmail && (
+          <View style={{ marginTop: SPACING.xl }}>
+            <Text style={{
+              fontSize: 20,
+              color: colors.primaryText,
+              fontWeight: '600',
+              marginBottom: SPACING.md,
+            }}>Account</Text>
+
+            <View style={{
+              padding: SPACING.lg,
+              backgroundColor: 'rgba(15, 23, 42, 0.6)',
+              borderRadius: SPACING.md,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
+                <View style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: SPACING.md,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                }}>
+                  <Ionicons name="mail-outline" size={20} color={colors.primaryText} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    fontSize: 13,
+                    color: colors.secondaryText,
+                    marginBottom: 2,
+                  }}>Signed in with {authProvider ?? 'your account'}</Text>
+                  <Text style={{
+                    fontSize: 16,
+                    color: colors.primaryText,
+                    fontWeight: '600',
+                  }}>{accountEmail}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Profile Options */}
         <View style={{ marginTop: SPACING.xl }}>
           <TouchableOpacity style={{ 
@@ -962,6 +1084,47 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
           </TouchableOpacity>
 
+          {/* Delete Account */}
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: SPACING.md,
+              paddingHorizontal: SPACING.lg,
+              backgroundColor: 'rgba(239, 68, 68, 0.05)',
+              borderRadius: SPACING.md,
+              marginBottom: SPACING.sm,
+              borderWidth: 1,
+              borderColor: 'rgba(239, 68, 68, 0.2)',
+              elevation: 4,
+            }}
+            onPress={handleDeleteAccount}
+            disabled={isDeletingAccount || isLoggingOut}
+          >
+            <View style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: SPACING.md,
+              borderWidth: 1,
+              borderColor: 'rgba(239, 68, 68, 0.25)',
+            }}>
+              <Ionicons name="trash-outline" size={20} color="#EF4444" />
+            </View>
+            <Text style={{
+              fontSize: 16,
+              color: '#EF4444',
+              fontWeight: '500',
+              flex: 1,
+            }}>
+              {isDeletingAccount ? 'Deleting account…' : 'Delete Account'}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color="#EF4444" />
+          </TouchableOpacity>
+
           {/* Log Out */}
           <TouchableOpacity
             style={{ 
@@ -1051,47 +1214,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 </View>
               </View>
               {currentTheme === 'midnight' && (
-                <Ionicons name="checkmark-circle" size={24} color={colors.primaryAccent} />
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={{ 
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: SPACING.md,
-                backgroundColor: currentTheme === 'ocean' ? colors.primaryAccent + '20' : '#0F172A',
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: currentTheme === 'ocean' ? colors.primaryAccent : 'rgba(255, 255, 255, 0.14)',
-              }}
-              onPress={() => setTheme('ocean')}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <View style={{ 
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  marginRight: SPACING.md,
-                  borderWidth: 2,
-                  borderColor: colors.glassBorder,
-                  backgroundColor: colors.cardBackground,
-                }} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ 
-                    fontSize: 16,
-                    color: colors.primaryText,
-                    fontWeight: '600',
-                    marginBottom: SPACING.xs,
-                  }}>Ocean</Text>
-                  <Text style={{ 
-                    fontSize: 14,
-                    color: colors.secondaryText,
-                  }}>Deep blue waves</Text>
-                </View>
-              </View>
-              {currentTheme === 'ocean' && (
                 <Ionicons name="checkmark-circle" size={24} color={colors.primaryAccent} />
               )}
             </TouchableOpacity>

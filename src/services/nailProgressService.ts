@@ -346,6 +346,17 @@ class NailProgressService {
       console.error('Error clearing local cache:', error);
     }
   }
+
+  invalidateCache(): void {
+    this.localCache = null;
+    void this.clearLocalCache();
+  }
+
+  async refreshPhotos(): Promise<NailProgressPhoto[]> {
+    this.localCache = null;
+    await this.clearLocalCache();
+    return this.refreshCache();
+  }
 }
 
 export default new NailProgressService();

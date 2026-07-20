@@ -26,7 +26,7 @@
         "NSMicrophoneUsageDescription": "Nayl uses your microphone for guided meditation and relaxation audio features.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "usesAppleSignIn": false
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -44,11 +44,30 @@
     "plugins": [
       "expo-font",
       "expo-video",
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.848177887984-jm04rg1n1is8q290qqinpqtdo7kkvfs9"
+        }
+      ],
       [
         "expo-image-picker",
         {
           "photosPermission": "Nayl accesses your photo library so you can choose photos to track your nail progress and set a profile picture.",
           "cameraPermission": "Nayl uses your camera so you can take photos to track your nail progress over time."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "extraPods": [
+              { "name": "GoogleUtilities/Environment", "modular_headers": true },
+              { "name": "GoogleUtilities/UserDefaults", "modular_headers": true },
+              { "name": "RecaptchaInterop", "modular_headers": true }
+            ]
+          }
         }
       ]
     ],

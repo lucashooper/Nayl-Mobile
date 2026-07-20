@@ -56,28 +56,25 @@ export const COLORS = {
   iconGlow: 'rgba(193, 255, 114, 0.3)', // Subtle glow for active icons
 };
 
+import { FONT_FAMILY } from './fonts';
+
 export const TYPOGRAPHY = {
-  // Premium Display Text
-  displayLarge: { fontSize: 56, fontFamily: 'Inter-Bold', fontWeight: '900' as const },
-  displayMedium: { fontSize: 42, fontFamily: 'Inter-Bold', fontWeight: '800' as const },
-  
-  // Enhanced Headings
-  headingLarge: { fontSize: 36, fontFamily: 'Inter-Bold', fontWeight: '700' as const },
-  headingMedium: { fontSize: 28, fontFamily: 'Inter-SemiBold', fontWeight: '600' as const },
-  headingSmall: { fontSize: 22, fontFamily: 'Inter-SemiBold', fontWeight: '600' as const },
-  
-  // Premium Body Text
-  bodyLarge: { fontSize: 20, fontFamily: 'Inter-Medium', fontWeight: '500' as const },
-  bodyMedium: { fontSize: 18, fontFamily: 'Inter-Regular', fontWeight: '400' as const },
-  bodySmall: { fontSize: 16, fontFamily: 'Inter-Regular', fontWeight: '400' as const },
-  
-  // Enhanced Specialized Text
-  caption: { fontSize: 14, fontFamily: 'Inter-Regular', fontWeight: '400' as const },
-  buttonText: { fontSize: 18, fontFamily: 'Inter-SemiBold', fontWeight: '600' as const },
-  timerText: { fontSize: 48, fontFamily: 'Inter-Bold', fontWeight: '900' as const, fontVariant: ['tabular-nums'] as any },
-  
-  // Hero Text for Orb
-  heroText: { fontSize: 52, fontFamily: 'Inter-Bold', fontWeight: '900' as const },
+  displayLarge: { fontSize: 56, fontFamily: FONT_FAMILY.black },
+  displayMedium: { fontSize: 42, fontFamily: FONT_FAMILY.extraBold },
+
+  headingLarge: { fontSize: 36, fontFamily: FONT_FAMILY.bold },
+  headingMedium: { fontSize: 28, fontFamily: FONT_FAMILY.semiBold },
+  headingSmall: { fontSize: 22, fontFamily: FONT_FAMILY.semiBold },
+
+  bodyLarge: { fontSize: 20, fontFamily: FONT_FAMILY.medium },
+  bodyMedium: { fontSize: 18, fontFamily: FONT_FAMILY.regular },
+  bodySmall: { fontSize: 16, fontFamily: FONT_FAMILY.regular },
+
+  caption: { fontSize: 14, fontFamily: FONT_FAMILY.regular },
+  buttonText: { fontSize: 18, fontFamily: FONT_FAMILY.semiBold },
+  timerText: { fontSize: 48, fontFamily: FONT_FAMILY.extraBold, fontVariant: ['tabular-nums'] as const },
+
+  heroText: { fontSize: 52, fontFamily: FONT_FAMILY.black },
 };
 
 export const SPACING = {

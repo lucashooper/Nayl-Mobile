@@ -1,15 +1,15 @@
-import { Platform } from 'react-native';
+/** Loaded via @expo-google-fonts/inter in App.tsx — use these instead of fontWeight on 'Inter' */
+export const FONT_FAMILY = {
+  regular: 'Inter_400Regular',
+  medium: 'Inter_500Medium',
+  semiBold: 'Inter_600SemiBold',
+  bold: 'Inter_700Bold',
+  extraBold: 'Inter_800ExtraBold',
+  black: 'Inter_900Black',
+} as const;
 
-// Inter font configuration
 export const FONTS = {
-  // Font family
-  inter: Platform.select({
-    ios: 'Inter',
-    android: 'Inter',
-    default: 'Inter',
-  }),
-
-  // Font weights
+  inter: FONT_FAMILY.regular,
   thin: '100',
   extraLight: '200',
   light: '300',
@@ -19,8 +19,6 @@ export const FONTS = {
   bold: '700',
   extraBold: '800',
   black: '900',
-
-  // Font sizes
   xs: 12,
   sm: 14,
   base: 16,
@@ -33,68 +31,16 @@ export const FONTS = {
   '6xl': 60,
 };
 
-// Font styles for common use cases
 export const FONT_STYLES = {
-  // Headers
-  h1: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.bold,
-    fontSize: FONTS['4xl'],
-  },
-  h2: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.bold,
-    fontSize: FONTS['3xl'],
-  },
-  h3: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.semiBold,
-    fontSize: FONTS['2xl'],
-  },
-  h4: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.semiBold,
-    fontSize: FONTS.xl,
-  },
-
-  // Body text
-  body: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.regular,
-    fontSize: FONTS.base,
-  },
-  bodySmall: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.regular,
-    fontSize: FONTS.sm,
-  },
-  bodyLarge: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.regular,
-    fontSize: FONTS.lg,
-  },
-
-  // Labels and captions
-  label: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.medium,
-    fontSize: FONTS.sm,
-  },
-  caption: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.regular,
-    fontSize: FONTS.xs,
-  },
-
-  // Buttons
-  button: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.semiBold,
-    fontSize: FONTS.base,
-  },
-  buttonSmall: {
-    fontFamily: FONTS.inter,
-    fontWeight: FONTS.semiBold,
-    fontSize: FONTS.sm,
-  },
-}; 
+  h1: { fontFamily: FONT_FAMILY.bold, fontSize: FONTS['4xl'] },
+  h2: { fontFamily: FONT_FAMILY.bold, fontSize: FONTS['3xl'] },
+  h3: { fontFamily: FONT_FAMILY.semiBold, fontSize: FONTS['2xl'] },
+  h4: { fontFamily: FONT_FAMILY.semiBold, fontSize: FONTS.xl },
+  body: { fontFamily: FONT_FAMILY.regular, fontSize: FONTS.base },
+  bodySmall: { fontFamily: FONT_FAMILY.regular, fontSize: FONTS.sm },
+  bodyLarge: { fontFamily: FONT_FAMILY.regular, fontSize: FONTS.lg },
+  label: { fontFamily: FONT_FAMILY.medium, fontSize: FONTS.sm },
+  caption: { fontFamily: FONT_FAMILY.regular, fontSize: FONTS.xs },
+  button: { fontFamily: FONT_FAMILY.semiBold, fontSize: FONTS.base },
+  buttonSmall: { fontFamily: FONT_FAMILY.semiBold, fontSize: FONTS.sm },
+};

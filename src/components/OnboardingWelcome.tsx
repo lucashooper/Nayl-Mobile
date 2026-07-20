@@ -45,8 +45,9 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
   const exitTranslateX = useSharedValue(0);
   const isExiting = useSharedValue(false);
 
-  // Button press animation
-  const buttonScale = useSharedValue(1);
+  // Button press animations — separate so Login doesn't animate Begin
+  const beginButtonScale = useSharedValue(1);
+  const loginButtonScale = useSharedValue(1);
 
   // Start animations when component mounts or becomes visible
   useEffect(() => {
@@ -95,11 +96,11 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
   };
 
   const handleStartPressIn = () => {
-    buttonScale.value = withTiming(0.95, { duration: 100, easing: Easing.out(Easing.cubic) });
+    beginButtonScale.value = withTiming(0.95, { duration: 100, easing: Easing.out(Easing.cubic) });
   };
 
   const handleStartPressOut = () => {
-    buttonScale.value = withTiming(1, { duration: 100, easing: Easing.out(Easing.cubic) });
+    beginButtonScale.value = withTiming(1, { duration: 100, easing: Easing.out(Easing.cubic) });
   };
 
   const handleLogin = () => {
@@ -108,11 +109,11 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
   };
 
   const handleLoginPressIn = () => {
-    buttonScale.value = withTiming(0.98, { duration: 100, easing: Easing.out(Easing.cubic) });
+    loginButtonScale.value = withTiming(0.98, { duration: 100, easing: Easing.out(Easing.cubic) });
   };
 
   const handleLoginPressOut = () => {
-    buttonScale.value = withTiming(1, { duration: 100, easing: Easing.out(Easing.cubic) });
+    loginButtonScale.value = withTiming(1, { duration: 100, easing: Easing.out(Easing.cubic) });
   };
 
   // Simple animated styles - just like the working second page
@@ -141,8 +142,12 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
     transform: [{ translateX: exitTranslateX.value }],
   }));
 
-  const buttonPressStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: buttonScale.value }],
+  const beginButtonPressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: beginButtonScale.value }],
+  }));
+
+  const loginButtonPressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: loginButtonScale.value }],
   }));
 
   return (
@@ -196,7 +201,7 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
         
         {/* Start Journey Button */}
         <Animated.View style={buttonsAnimatedStyle}>
-          <Animated.View style={buttonPressStyle}>
+          <Animated.View style={beginButtonPressStyle}>
             <TouchableOpacity 
               style={styles.startButton} 
               onPress={handleStart}
@@ -205,7 +210,7 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
               activeOpacity={1}
             >
               <LinearGradient
-                colors={['#6D28D9', '#DB2777']} // Slightly softer saturation
+                colors={['#6D28D9', '#DB2777']}
                 style={styles.buttonGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -216,14 +221,15 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
           </Animated.View>
         </Animated.View>
         
-        {/* Login Link */}
-        <Animated.View style={buttonsAnimatedStyle}>
-          <Animated.View style={buttonPressStyle}>
+        <Animated.View style={[buttonsAnimatedStyle, styles.loginContainer]}>
+          <Animated.View style={loginButtonPressStyle}>
             <TouchableOpacity 
               onPress={handleLogin}
               onPressIn={handleLoginPressIn}
               onPressOut={handleLoginPressOut}
               activeOpacity={1}
+              hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
+              style={styles.loginTouchable}
             >
               <Text style={styles.loginLink}>Login</Text>
             </TouchableOpacity>
@@ -316,6 +322,15 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   
+  loginContainer: {
+    marginTop: 4,
+  },
+
+  loginTouchable: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+
   loginLink: {
     fontSize: 15,
     fontWeight: '400',

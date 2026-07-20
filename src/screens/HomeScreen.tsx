@@ -36,8 +36,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import triggerService from '../services/triggerService';
 import sessionService, { USER_SESSION_CHANGED } from '../services/sessionService';
-import { typography, body, bodySmall, caption, buttonText, timerText, timerLabel } from '../constants/typography';
+import profileService from '../services/profileService';
+import { shouldShowWelcome, markWelcomeShown } from '../services/welcomeService';
+import marketingDemoService from '../services/marketingDemoService';
+import WelcomeModal from '../components/WelcomeModal';
 import ProfileHeader from '../components/ProfileHeader';
+import { typography, body, bodySmall, caption, buttonText, timerText, timerLabel } from '../constants/typography';
 import { UserDashboard } from '../lib/supabase';
 
 
@@ -122,6 +126,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [isResetModalVisible, setIsResetModalVisible] = useState(false);
   // Color picker modal state
   const [isColorPickerVisible, setIsColorPickerVisible] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [welcomeName, setWelcomeName] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [resetAnimationSeconds, setResetAnimationSeconds] = useState(0);
   
@@ -188,6 +194,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       const hasUser = await sessionService.hasUser();
       if (!hasUser) return;
 
+      const demoApplied = await marketingDemoService.applyIfNeeded();
+      if (demoApplied) {
+        await refreshStreakData();
+        await loadDashboardData();
+      }
+
       sessionService.startSession().catch(error => {
         console.warn('Failed to start session:', error);
       });
@@ -198,6 +210,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     };
 
     bootstrap();
+
+    // Show welcome modal once after completing onboarding
+    (async () => {
+      try {
+        const show = await shouldShowWelcome();
+        if (!show) return;
+        const cached = await profileService.getCachedProfileData();
+        const profile = cached ?? await profileService.getProfileData().catch(() => null);
+        setWelcomeName(profile?.profile_name || 'there');
+        setShowWelcome(true);
+      } catch {
+        // Non-critical
+      }
+    })();
 
     // NEW: Check if today should be marked as successful (no episodes)
     // This ensures the weekly check-ins reflect actual successful days
@@ -925,6 +951,15 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         onClose={() => setIsStreakOverlayVisible(false)}
         consecutiveDays={consecutiveDays}
         elapsedSeconds={elapsedSeconds}
+      />
+
+      <WelcomeModal
+        visible={showWelcome}
+        userName={welcomeName}
+        onContinue={async () => {
+          await markWelcomeShown();
+          setShowWelcome(false);
+        }}
       />
     </SafeAreaView>
     </PerformanceMeasureView>

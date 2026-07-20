@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme, useThemeGuaranteed } from '../context/ThemeContext';
-import profileService from '../services/profileService';
-import BrandLogo from './BrandLogo';
+import { View, Image, StyleSheet, TouchableOpacity, Text, DeviceEventEmitter } from 'react-native';
+import { useThemeGuaranteed } from '../context/ThemeContext';
+import profileService, { PROFILE_UPDATED } from '../services/profileService';
+import { USER_SESSION_CHANGED } from '../services/sessionService';
+
+function getInitials(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed || trimmed === 'Your Name') return '?';
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return trimmed.slice(0, 2).toUpperCase();
+}
 
 interface ProfileHeaderProps {
   size?: 'small' | 'medium' | 'large';
@@ -20,7 +30,55 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 }) => {
   const themeResult = useThemeGuaranteed();
   const colors = themeResult?.colors;
-  
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState<string>('Your Name');
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadProfilePicture = async () => {
+    try {
+      const cached = await profileService.getCachedProfileData();
+      if (cached) {
+        setProfilePictureUrl(cached.profile_picture_url || null);
+        setProfileName(cached.profile_name || 'Your Name');
+        setIsLoading(false);
+      }
+
+      const profileData = await profileService.getProfileData();
+      setProfilePictureUrl(profileData.profile_picture_url || null);
+      setProfileName(profileData.profile_name || 'Your Name');
+    } catch (error) {
+      console.error('Error loading profile picture:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProfilePicture();
+
+    const sessionSubscription = DeviceEventEmitter.addListener(USER_SESSION_CHANGED, loadProfilePicture);
+    const profileSubscription = DeviceEventEmitter.addListener(
+      PROFILE_UPDATED,
+      (payload?: { profile_name?: string; profile_picture_url?: string }) => {
+        if (payload?.profile_name) {
+          setProfileName(payload.profile_name);
+        }
+        if (payload?.profile_picture_url !== undefined) {
+          setProfilePictureUrl(payload.profile_picture_url || null);
+        }
+        if (!payload?.profile_name && payload?.profile_picture_url === undefined) {
+          loadProfilePicture();
+        }
+        setIsLoading(false);
+      },
+    );
+
+    return () => {
+      sessionSubscription.remove();
+      profileSubscription.remove();
+    };
+  }, []);
+
   // Enhanced safety check for theme colors
   if (!colors || 
       typeof colors !== 'object' || 
@@ -28,7 +86,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       !colors.primaryText ||
       !colors.primaryAccent) {
     console.warn('⚠️ ProfileHeader: Theme colors not ready, using fallback');
-    // Return a minimal loading state
     return (
       <View style={{ 
         height: 120, 
@@ -41,36 +98,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       </View>
     );
   }
-
-  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
-  const [profileName, setProfileName] = useState<string>('Your Name');
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadProfilePicture = async () => {
-      try {
-        const cached = await profileService.getCachedProfileData();
-        if (cached) {
-          setProfilePictureUrl(cached.profile_picture_url || null);
-          setProfileName(cached.profile_name || 'Your Name');
-          setIsLoading(false);
-        }
-
-        const profileData = await profileService.getProfileData();
-        setProfilePictureUrl(profileData.profile_picture_url || null);
-        setProfileName(profileData.profile_name || 'Your Name');
-      } catch (error) {
-        console.error('Error loading profile picture:', error);
-        if (!profilePictureUrl) {
-          setProfilePictureUrl(null);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadProfilePicture();
-  }, []);
 
   const getSizeStyles = () => {
     switch (size) {
@@ -85,17 +112,10 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
   const sizeStyles = getSizeStyles();
 
-  if (isLoading && !profilePictureUrl) {
-    return (
-      <View style={[styles.container, sizeStyles]}>
-        <BrandLogo size={size} />
-      </View>
-    );
-  }
+  const initialsFontSize = size === 'small' ? 12 : size === 'large' ? 18 : 14;
 
   const renderProfileContent = () => {
     if (profilePictureUrl) {
-      // Show user's profile picture
       return (
         <Image 
           source={{ uri: profilePictureUrl }} 
@@ -105,9 +125,14 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         />
       );
     }
-    
-    // Fall back to basic logo
-    return <BrandLogo size={size} />;
+
+    return (
+      <View style={[styles.initialsAvatar, sizeStyles, { backgroundColor: colors.primaryAccent }]}>
+        <Text style={[styles.initialsText, { fontSize: initialsFontSize }]}>
+          {isLoading ? '…' : getInitials(profileName)}
+        </Text>
+      </View>
+    );
   };
 
   return (
@@ -138,6 +163,17 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  initialsAvatar: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  initialsText: {
+    color: '#0F172A',
+    fontWeight: '700',
   },
   profileImage: {
     borderWidth: 2,

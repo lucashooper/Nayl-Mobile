@@ -1,8 +1,10 @@
+import { DeviceEventEmitter } from 'react-native';
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import sessionService from './sessionService';
 
 export const PROFILE_CACHE_KEY = '@nayl_profile_cache';
+export const PROFILE_UPDATED = 'nayl_profile_updated';
 
 export interface ProfileData {
   profile_picture_url?: string;
@@ -127,6 +129,16 @@ class ProfileService {
     return null;
   }
 
+  async cacheProfileName(name: string): Promise<void> {
+    const existing = (await this.getCachedProfileData()) ?? {
+      profile_name: name,
+      longest_streak_seconds: 0,
+      consecutive_days: 0,
+      total_days_logged_in: 0,
+    };
+    await this.cacheProfileData({ ...existing, profile_name: name });
+  }
+
   private async cacheProfileData(data: ProfileData): Promise<void> {
     try {
       const key = await sessionService.getUserStorageKey(PROFILE_CACHE_KEY);
@@ -238,6 +250,9 @@ class ProfileService {
         }
       }
       
+      await this.cacheProfileName(name);
+      DeviceEventEmitter.emit(PROFILE_UPDATED, { profile_name: name });
+
       console.log('Profile name updated in database successfully');
     } catch (error) {
       console.error('Error updating profile name:', error);

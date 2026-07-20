@@ -23,12 +23,26 @@ class SessionService {
   async hasUser(): Promise<boolean> {
     if (this.currentUserId) return true;
     const userId = await AsyncStorage.getItem(USER_ID_KEY);
-    return userId != null;
+    if (userId != null) return true;
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user != null;
+  }
+
+  async setUserId(userId: string): Promise<string> {
+    await AsyncStorage.setItem(USER_ID_KEY, userId);
+    this.currentUserId = userId;
+    this.emitSessionChange(userId);
+    return userId;
   }
 
   // Create or restore the active user — call after onboarding completes
   async initializeUser(): Promise<string> {
     try {
+      const { data: authData } = await supabase.auth.getSession();
+      if (authData.session?.user?.id) {
+        return this.setUserId(authData.session.user.id);
+      }
+
       let userId = await AsyncStorage.getItem(USER_ID_KEY);
       if (!userId) {
         userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -1065,8 +1079,10 @@ class SessionService {
         await AsyncStorage.multiRemove(naylKeys);
       }
 
-      // Reset in-memory user ID so a fresh anonymous ID is created on next launch
+      await AsyncStorage.removeItem(USER_ID_KEY);
+      await AsyncStorage.removeItem(SESSION_KEY);
       this.currentUserId = null;
+      this.emitSessionChange(null);
     } catch (error) {
       console.error('Error deleting user data:', error);
       throw error;

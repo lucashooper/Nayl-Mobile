@@ -30,18 +30,22 @@ import NaylProUpgradeScreen from './NaylProUpgradeScreen';
 
 const { width, height } = Dimensions.get('window');
 
+const PAYWALL_PAGE_INDEX = 18;
+
 interface OnboardingQuizProps {
-  onComplete: () => void;
+  onComplete: (userName: string) => void;
+  onLogin: () => void;
+  paywallOnly?: boolean;
 }
 
 const QUIZ_FIRST_PAGE_INDEX = 3;
 
-const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
-  const [currentPage, setCurrentPage] = useState(0);
+const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete, onLogin, paywallOnly = false }) => {
+  const [currentPage, setCurrentPage] = useState(paywallOnly ? PAYWALL_PAGE_INDEX : 0);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string | string[]>>({});
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [userName, setUserName] = useState('');
-  const [showUpgradeScreen, setShowUpgradeScreen] = useState(false);
+  const [showUpgradeScreen, setShowUpgradeScreen] = useState(paywallOnly);
   
   const progressAnim = useSharedValue(0);
   const pagerRef = useRef<PagerView>(null);
@@ -368,9 +372,9 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
     goToNext(); // Go to info page
   };
 
-  const handleWelcomeSkip = () => {
+  const handleWelcomeLogin = () => {
     hapticService.trigger(HapticType.LIGHT_TAP, HapticIntensity.SUBTLE);
-    goToPage(nameInputPageIndex);
+    onLogin();
   };
 
   const handleQuizAnswer = (questionId: string, answerId: string) => {
@@ -431,20 +435,24 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
   };
 
   const handleComplete = () => {
-    onComplete();
+    onComplete(userName.trim());
   };
 
   const handleNavigateToProUpgrade = () => {
     setShowUpgradeScreen(true);
-    // Navigate to the next page (Nayl Pro Upgrade Screen)
-    goToPage(18);
+    goToPage(PAYWALL_PAGE_INDEX);
   };
 
   const handleUnlockPro = () => {
-    // NaylProUpgradeScreen manages the purchase flow internally.
-    // This callback is invoked only after a successful purchase or restore.
-    onComplete();
+    onComplete(userName.trim());
   };
+
+  useEffect(() => {
+    if (!paywallOnly) return;
+    setShowUpgradeScreen(true);
+    setCurrentPage(PAYWALL_PAGE_INDEX);
+    pagerRef.current?.setPage(PAYWALL_PAGE_INDEX);
+  }, [paywallOnly]);
 
   const onPageSelected = (e: any) => {
     const newPage = e.nativeEvent.position;
@@ -563,9 +571,9 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
       <PagerView
         ref={pagerRef}
         style={styles.pager}
-        initialPage={0}
+        initialPage={paywallOnly ? PAYWALL_PAGE_INDEX : 0}
         onPageSelected={onPageSelected}
-        scrollEnabled={!isTransitioning}
+        scrollEnabled={!isTransitioning && !paywallOnly}
         pageMargin={0}
         overdrag={false}
         overScrollMode="never"
@@ -596,7 +604,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete }) => {
             <OnboardingWelcome 
               key="welcome-visible"
               onStart={handleWelcomeStart}
-              onLogin={handleWelcomeSkip}
+              onLogin={handleWelcomeLogin}
               isEmbedded={true}
               isVisible={currentPage === 0}
             />

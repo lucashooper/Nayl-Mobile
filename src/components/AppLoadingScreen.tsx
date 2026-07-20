@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Image, Text, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { FONT_FAMILY } from '../constants/fonts';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -55,9 +56,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   brandName: {
-    fontFamily: 'Inter',
+    fontFamily: FONT_FAMILY.bold,
     fontSize: 52,
-    fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 1.5,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',

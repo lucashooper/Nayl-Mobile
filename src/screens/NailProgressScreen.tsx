@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useThemeGuaranteed } from '../context/ThemeContext';
 import { useStreak } from '../context/StreakContext';
 import nailProgressService, { NailProgressPhoto } from '../services/nailProgressService';
+import marketingDemoService from '../services/marketingDemoService';
 import hapticService, { HapticType, HapticIntensity } from '../services/hapticService';
 import { SPACING, TYPOGRAPHY } from '../constants/theme';
 
@@ -49,7 +50,8 @@ const NailProgressScreen: React.FC<NailProgressScreenProps> = ({ navigation }) =
     try {
       setIsLoading(true);
       const data = await nailProgressService.getPhotos();
-      setPhotos(data);
+      const displayPhotos = await marketingDemoService.getDisplayPhotos(data);
+      setPhotos(displayPhotos);
     } catch (error) {
       console.error('Error loading photos:', error);
     } finally {

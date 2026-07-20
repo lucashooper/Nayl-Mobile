@@ -395,7 +395,7 @@ const ThemeProviderContent: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const savedTheme = await AsyncStorage.getItem('selectedTheme');
       if (savedTheme && (savedTheme === 'midnight' || savedTheme === 'ocean' || savedTheme === 'twilight')) {
-        setCurrentTheme(savedTheme as ThemeType);
+        setCurrentTheme(savedTheme === 'ocean' ? 'midnight' : (savedTheme as ThemeType));
       } else {
         // No saved theme, use default
         setCurrentTheme('midnight');

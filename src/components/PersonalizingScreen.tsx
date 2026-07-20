@@ -41,7 +41,7 @@ const PersonalizingScreen: React.FC<PersonalizingScreenProps> = ({ userName, onC
     "Personalizing...",
     "Evaluating your answers...",
     "Crafting the perfect plan...",
-    "Optimizing your AI Coach..."
+    "Building your personalized plan..."
   ];
 
   // Starfield data - subtle blue/purple gradient stars

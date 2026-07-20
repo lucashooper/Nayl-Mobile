@@ -6,6 +6,14 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as Font from 'expo-font';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+  Inter_900Black,
+} from '@expo-google-fonts/inter';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PerformanceMeasureView } from '@shopify/react-native-performance';
 
@@ -46,6 +54,7 @@ import hapticService, { HapticType, HapticIntensity } from './src/services/hapti
 import { preloadCriticalAssets, preloadDeferredAssets } from './src/utils/assetPreloader';
 import AppLoadingScreen from './src/components/AppLoadingScreen';
 import iapService from './src/services/iapService';
+import authService from './src/services/authService';
 
 const Tab = createBottomTabNavigator();
 
@@ -85,7 +94,8 @@ function AppContent() {
             const currentStackRoute = currentRoute.state.routes[currentRoute.state.index];
             const isOnboarding = currentStackRoute?.name &&
               (currentStackRoute.name === 'OnboardingQuestionnaire' ||
-                currentStackRoute.name === 'Onboarding');
+                currentStackRoute.name === 'Onboarding' ||
+                currentStackRoute.name === 'Login');
             
             setIsOnboardingScreen(isOnboarding || false);
           }
@@ -337,10 +347,16 @@ export default function App() {
       try {
         await Promise.all([
           Font.loadAsync({
-            'Inter': require('./assets/fonts/Inter-Regular.ttf'),
+            Inter_400Regular,
+            Inter_500Medium,
+            Inter_600SemiBold,
+            Inter_700Bold,
+            Inter_800ExtraBold,
+            Inter_900Black,
           }),
           preloadCriticalAssets(),
           iapService.initialize(),
+          Promise.resolve(authService.configure()),
         ]);
       } catch (error) {
         console.log('Resource loading error:', error);

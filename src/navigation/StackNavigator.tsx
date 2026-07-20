@@ -17,6 +17,7 @@ import ArticlesScreen from '../screens/ArticlesScreen';
 import ArticleDetailScreen from '../screens/ArticleDetailScreen';
 import OnboardingQuestionnaireScreen from '../screens/OnboardingQuestionnaireScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import LoginScreen from '../screens/LoginScreen';
 import EditStreakScreen from '../screens/EditStreakScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import NailProgressScreen from '../screens/NailProgressScreen';
@@ -73,6 +74,11 @@ export function HomeStack() {
         name="Onboarding"
         component={OnboardingScreen}
         options={{ gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ gestureEnabled: true }}
       />
       <Stack.Screen name="OnboardingQuestionnaire" component={OnboardingQuestionnaireScreen} />
       <Stack.Screen name="EditStreak" component={EditStreakScreen} />

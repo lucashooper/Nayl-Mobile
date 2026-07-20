@@ -56,6 +56,13 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
   useEffect(() => {
     const loadOfferings = async () => {
       try {
+        // If already subscribed (e.g. sandbox retry), skip paywall
+        const alreadyPro = await iapService.isProUser();
+        if (alreadyPro) {
+          onUnlockPro();
+          return;
+        }
+
         const offering = await iapService.getOfferings();
         if (offering?.availablePackages) {
           const pkgMap: Record<string, PurchasesPackage> = {};
@@ -183,10 +190,16 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
       if (result.success) {
         onUnlockPro();
       } else {
-        Alert.alert(
-          'Purchase Failed',
-          'Your purchase could not be completed. Please try again.',
-        );
+        // Sandbox can charge Apple but lag on RC entitlements — try restore before failing
+        const restored = await iapService.restorePurchases();
+        if (restored.success) {
+          onUnlockPro();
+        } else {
+          Alert.alert(
+            'Purchase Failed',
+            'Your purchase could not be completed. If you were charged, tap Restore Purchase below.',
+          );
+        }
       }
     } catch (error: any) {
       Alert.alert('Error', error?.message ?? 'An unexpected error occurred.');
