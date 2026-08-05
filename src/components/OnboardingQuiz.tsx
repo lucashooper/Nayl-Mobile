@@ -928,7 +928,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete, onLogin, pa
                     style={styles.skipButton} 
                     onPress={handleSkipQuiz}
                   >
-                    <Text style={styles.skipText}>Skip test</Text>
+                    <Text style={styles.skipText}>Skip</Text>
                   </TouchableOpacity>
                 </View>
               )}

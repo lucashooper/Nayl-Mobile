@@ -13,9 +13,7 @@ import sessionService, { USER_SESSION_CHANGED } from '../services/sessionService
 import authService from '../services/authService';
 import iapService from '../services/iapService';
 
-const PRIVACY_POLICY_URL = 'https://nayl.app/privacy';
-const TERMS_URL = 'https://nayl.app/terms';
-const SUPPORT_URL = 'https://nayl.app/support';
+import { PRIVACY_POLICY_URL, SUPPORT_URL, TERMS_URL } from '../constants/legalUrls';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -670,6 +668,122 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           </View>
         </View>
 
+        {/* Account — visible for App Review (Guideline 5.1.1v) */}
+        <View style={{ marginBottom: SPACING.xl }}>
+          <Text style={{
+            fontSize: 20,
+            color: colors.primaryText,
+            fontWeight: '600',
+            marginBottom: SPACING.md,
+          }}>Account</Text>
+
+          <View style={{
+            padding: SPACING.lg,
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            borderRadius: SPACING.md,
+            borderWidth: 1,
+            borderColor: 'rgba(255, 255, 255, 0.08)',
+            marginBottom: SPACING.sm,
+          }}>
+            {accountEmail ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: SPACING.md,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                }}>
+                  <Ionicons name="mail-outline" size={20} color={colors.primaryText} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, color: colors.secondaryText, marginBottom: 2 }}>
+                    Signed in with {authProvider ?? 'your account'}
+                  </Text>
+                  <Text style={{ fontSize: 16, color: colors.primaryText, fontWeight: '600' }}>
+                    {accountEmail}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={{ fontSize: 14, color: colors.secondaryText, lineHeight: 20 }}>
+                Your streak, journal, and progress are linked to your Nayl account on this device.
+              </Text>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: SPACING.md,
+              paddingHorizontal: SPACING.lg,
+              backgroundColor: 'rgba(239, 68, 68, 0.08)',
+              borderRadius: SPACING.md,
+              marginBottom: SPACING.sm,
+              borderWidth: 1,
+              borderColor: 'rgba(239, 68, 68, 0.25)',
+            }}
+            onPress={handleDeleteAccount}
+            disabled={isDeletingAccount || isLoggingOut}
+          >
+            <View style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: SPACING.md,
+              borderWidth: 1,
+              borderColor: 'rgba(239, 68, 68, 0.3)',
+            }}>
+              <Ionicons name="trash-outline" size={20} color="#EF4444" />
+            </View>
+            <Text style={{ fontSize: 16, color: '#EF4444', fontWeight: '600', flex: 1 }}>
+              {isDeletingAccount ? 'Deleting account…' : 'Delete Account'}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color="#EF4444" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: SPACING.md,
+              paddingHorizontal: SPACING.lg,
+              backgroundColor: 'rgba(15, 23, 42, 0.6)',
+              borderRadius: SPACING.md,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+            }}
+            onPress={handleLogout}
+            disabled={isLoggingOut || isDeletingAccount}
+          >
+            <View style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: SPACING.md,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+            }}>
+              <Ionicons name="log-out-outline" size={20} color={colors.primaryText} />
+            </View>
+            <Text style={{ fontSize: 16, color: colors.primaryText, fontWeight: '500', flex: 1 }}>
+              {isLoggingOut ? 'Logging out…' : 'Log Out'}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
+          </TouchableOpacity>
+        </View>
+
         {/* Complex Streak Card with Gradients */}
         <View style={{ 
           marginBottom: SPACING.lg,
@@ -871,54 +985,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           </LinearGradient>
         </View>
 
-        {/* Account */}
-        {accountEmail && (
-          <View style={{ marginTop: SPACING.xl }}>
-            <Text style={{
-              fontSize: 20,
-              color: colors.primaryText,
-              fontWeight: '600',
-              marginBottom: SPACING.md,
-            }}>Account</Text>
-
-            <View style={{
-              padding: SPACING.lg,
-              backgroundColor: 'rgba(15, 23, 42, 0.6)',
-              borderRadius: SPACING.md,
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.08)',
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
-                <View style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: SPACING.md,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255, 255, 255, 0.1)',
-                }}>
-                  <Ionicons name="mail-outline" size={20} color={colors.primaryText} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{
-                    fontSize: 13,
-                    color: colors.secondaryText,
-                    marginBottom: 2,
-                  }}>Signed in with {authProvider ?? 'your account'}</Text>
-                  <Text style={{
-                    fontSize: 16,
-                    color: colors.primaryText,
-                    fontWeight: '600',
-                  }}>{accountEmail}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-
         {/* Profile Options */}
         <View style={{ marginTop: SPACING.xl }}>
           <TouchableOpacity style={{ 
@@ -1082,88 +1148,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               flex: 1,
             }}>Help & Support</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
-
-          {/* Delete Account */}
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingVertical: SPACING.md,
-              paddingHorizontal: SPACING.lg,
-              backgroundColor: 'rgba(239, 68, 68, 0.05)',
-              borderRadius: SPACING.md,
-              marginBottom: SPACING.sm,
-              borderWidth: 1,
-              borderColor: 'rgba(239, 68, 68, 0.2)',
-              elevation: 4,
-            }}
-            onPress={handleDeleteAccount}
-            disabled={isDeletingAccount || isLoggingOut}
-          >
-            <View style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: SPACING.md,
-              borderWidth: 1,
-              borderColor: 'rgba(239, 68, 68, 0.25)',
-            }}>
-              <Ionicons name="trash-outline" size={20} color="#EF4444" />
-            </View>
-            <Text style={{
-              fontSize: 16,
-              color: '#EF4444',
-              fontWeight: '500',
-              flex: 1,
-            }}>
-              {isDeletingAccount ? 'Deleting account…' : 'Delete Account'}
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#EF4444" />
-          </TouchableOpacity>
-
-          {/* Log Out */}
-          <TouchableOpacity
-            style={{ 
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingVertical: SPACING.md,
-              paddingHorizontal: SPACING.lg,
-              backgroundColor: 'rgba(239, 68, 68, 0.08)',
-              borderRadius: SPACING.md,
-              marginBottom: SPACING.sm,
-              borderWidth: 1,
-              borderColor: 'rgba(239, 68, 68, 0.25)',
-              elevation: 4,
-            }}
-            onPress={handleLogout}
-            disabled={isLoggingOut}
-          >
-            <View style={{ 
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: SPACING.md,
-              borderWidth: 1,
-              borderColor: 'rgba(239, 68, 68, 0.3)',
-            }}>
-              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-            </View>
-            <Text style={{ 
-              fontSize: 16,
-              color: '#EF4444',
-              fontWeight: '500',
-              flex: 1,
-            }}>
-              {isLoggingOut ? 'Logging out…' : 'Log Out'}
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#EF4444" />
           </TouchableOpacity>
         </View>
 

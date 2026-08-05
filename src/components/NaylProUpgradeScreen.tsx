@@ -23,9 +23,7 @@ import hapticService, { HapticType, HapticIntensity } from '../services/hapticSe
 import iapService from '../services/iapService';
 import { PurchasesPackage } from 'react-native-purchases';
 
-// Replace these URLs with your actual hosted pages
-const PRIVACY_POLICY_URL = 'https://nayl.app/privacy';
-const TERMS_URL = 'https://nayl.app/terms';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '../constants/legalUrls';
 
 const { width, height } = Dimensions.get('window');
 
@@ -35,14 +33,18 @@ interface NaylProUpgradeScreenProps {
 
 type PlanId = 'weekly' | 'monthly' | 'yearly';
 
-// Shown only before StoreKit prices load (Expo Go / offline). Production uses localized priceString from Apple.
-const FALLBACK_PRICES: Record<PlanId, string> = {
-  weekly: '$4.99/week',
-  monthly: '$9.99/month',
-  yearly: '$39.99/year',
+const PLAN_DETAILS: Record<PlanId, { title: string; duration: string; cadence: string }> = {
+  weekly: { title: 'Nayl Pro Weekly', duration: '1 week', cadence: 'week' },
+  monthly: { title: 'Nayl Pro Monthly', duration: '1 month', cadence: 'month' },
+  yearly: { title: 'Nayl Pro Yearly', duration: '1 year', cadence: 'year' },
 };
 
-const WEEKLY_TRIAL_DAYS = 3;
+// Shown only before StoreKit prices load (Expo Go / offline). Production uses localized priceString from Apple.
+const FALLBACK_PRICES: Record<PlanId, string> = {
+  weekly: '$4.99',
+  monthly: '$9.99',
+  yearly: '$39.99',
+};
 
 const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
   onUnlockPro,
@@ -96,24 +98,41 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
     return FALLBACK_PRICES[planId];
   };
 
-  const getWeeklyTrialLabel = (): string => {
+  const getWeeklyIntroTrialFinePrint = (): string | null => {
     const intro = packages.weekly?.product?.introPrice as
-      | { periodNumberOfUnits?: number; cycles?: number; periodUnit?: string }
+      | { price?: number; priceString?: string; periodNumberOfUnits?: number; periodUnit?: string; cycles?: number }
       | null
       | undefined;
-    const units = intro?.periodNumberOfUnits ?? intro?.cycles;
-    if (units != null && intro?.periodUnit) {
-      return `${units}-${intro.periodUnit.toLowerCase()} free trial`;
+
+    if (!intro || intro.price == null || intro.price > 0) {
+      return null;
     }
-    return `${WEEKLY_TRIAL_DAYS}-day free trial`;
+
+    const units = intro.periodNumberOfUnits ?? intro.cycles;
+    if (units != null && intro.periodUnit) {
+      const unitLabel = intro.periodUnit.toLowerCase();
+      return `Free for ${units} ${unitLabel}${units === 1 ? '' : 's'}, then ${getPriceString('weekly')} per week.`;
+    }
+
+    return null;
+  };
+
+  const getSelectedPlanSummary = (): { title: string; duration: string; price: string; cadence: string } => {
+    const details = PLAN_DETAILS[selectedPlan];
+    return {
+      title: details.title,
+      duration: details.duration,
+      price: getPriceString(selectedPlan),
+      cadence: details.cadence,
+    };
   };
 
   const getPrimaryButtonLabel = (): string => {
-    if (selectedPlan === 'weekly') {
-      return `Start ${WEEKLY_TRIAL_DAYS}-day free trial`;
-    }
-    return 'Subscribe now';
+    return `Subscribe for ${getPriceString(selectedPlan)}`;
   };
+
+  const openTerms = () => Linking.openURL(TERMS_URL);
+  const openPrivacy = () => Linking.openURL(PRIVACY_POLICY_URL);
 
   // Animation values for entrance animations
   const headerOpacity = useSharedValue(0);
@@ -386,7 +405,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 </View>
                 <Text style={styles.purchaseOptionTitle}>Weekly</Text>
                 <Text style={styles.purchaseOptionPrice}>{getPriceString('weekly')}</Text>
-                <Text style={styles.purchaseOptionSavings}>{getWeeklyTrialLabel()}</Text>
+                <Text style={styles.purchaseOptionCadence}>per week</Text>
               </TouchableOpacity>
 
               {/* Yearly Option */}
@@ -397,7 +416,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
               >
                 <Text style={styles.purchaseOptionTitle}>Yearly</Text>
                 <Text style={styles.purchaseOptionPrice}>{getPriceString('yearly')}</Text>
-                <Text style={styles.purchaseOptionSavings}>Best value</Text>
+                <Text style={styles.purchaseOptionCadence}>per year</Text>
               </TouchableOpacity>
 
               {/* Monthly Option */}
@@ -408,8 +427,11 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
               >
                 <Text style={styles.purchaseOptionTitle}>Monthly</Text>
                 <Text style={styles.purchaseOptionPrice}>{getPriceString('monthly')}</Text>
+                <Text style={styles.purchaseOptionCadence}>per month</Text>
               </TouchableOpacity>
             </View>
+
+            <Text style={styles.cancelAnytime}>No commitment — cancel anytime.</Text>
 
             {/* Unlock Button */}
             <TouchableOpacity
@@ -432,6 +454,15 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
               </LinearGradient>
             </TouchableOpacity>
 
+            <Text style={styles.subscriptionFinePrint}>
+              {getSelectedPlanSummary().title} · {getSelectedPlanSummary().duration} ·{' '}
+              {getSelectedPlanSummary().price} per {getSelectedPlanSummary().cadence}.
+              {selectedPlan === 'weekly' && getWeeklyIntroTrialFinePrint()
+                ? ` ${getWeeklyIntroTrialFinePrint()}`
+                : ' '}
+              Auto-renews until cancelled in Apple ID Settings.
+            </Text>
+
             {/* Footer Links */}
             <View style={styles.footerLinks}>
               <TouchableOpacity
@@ -445,11 +476,11 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 )}
               </TouchableOpacity>
               <Text style={styles.footerDot}>•</Text>
-              <TouchableOpacity onPress={() => Linking.openURL(TERMS_URL)}>
-                <Text style={styles.footerLink}>Terms & Conditions</Text>
+              <TouchableOpacity onPress={openTerms}>
+                <Text style={styles.footerLink}>Terms of Use (EULA)</Text>
               </TouchableOpacity>
               <Text style={styles.footerDot}>•</Text>
-              <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+              <TouchableOpacity onPress={openPrivacy}>
                 <Text style={styles.footerLink}>Privacy Policy</Text>
               </TouchableOpacity>
             </View>
@@ -619,26 +650,44 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   purchaseOptionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#CBD5E1',
     marginBottom: 4,
     textAlign: 'center',
     marginTop: 6,
   },
   purchaseOptionPrice: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#E2E8F0',
-    marginBottom: 1,
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 2,
     textAlign: 'center',
   },
-  purchaseOptionSavings: {
+  purchaseOptionCadence: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#A855F7',
+    fontWeight: '500',
+    color: '#94A3B8',
     textAlign: 'center',
     marginTop: 2,
+  },
+  cancelAnytime: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  subscriptionFinePrint: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 15,
+    marginTop: 10,
+    marginBottom: 4,
+    paddingHorizontal: 8,
   },
   unlockButtonDisabled: {
     opacity: 0.7,
@@ -647,7 +696,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 12,
     paddingHorizontal: 8,
     flexWrap: 'wrap',
     gap: 2,

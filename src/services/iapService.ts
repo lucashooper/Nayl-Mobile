@@ -193,7 +193,7 @@ class IAPService {
     try {
       await this.ensurePurchaseReady();
       if (!this.initialized) {
-        throw new Error('Purchases are not configured.');
+        return { success: false };
       }
       const customerInfo = await Purchases.restorePurchases();
       const isPro = hasProAccess(customerInfo);
@@ -201,7 +201,7 @@ class IAPService {
       return { success: isPro, customerInfo };
     } catch (error) {
       console.error('Restore purchases error:', error);
-      throw error;
+      return { success: false };
     }
   }
 

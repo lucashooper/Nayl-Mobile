@@ -1,4 +1,5 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
@@ -21,6 +22,23 @@ export function isNativeAuthAvailable(): boolean {
 
 class AuthService {
   private configured = false;
+
+  private generateNonce(length = 32): string {
+    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += charset[Math.floor(Math.random() * charset.length)];
+    }
+    return result;
+  }
+
+  getAuthErrorMessage(error: unknown): string {
+    if (typeof error === 'object' && error !== null) {
+      const message = (error as { message?: string }).message;
+      if (message) return message;
+    }
+    return 'Authentication failed. Please try again.';
+  }
 
   configure(): void {
     if (!isNativeAuthAvailable() || this.configured || !GOOGLE_IOS_CLIENT_ID) {
@@ -102,11 +120,18 @@ class AuthService {
       throw new Error('Sign in with Apple is not available on this device.');
     }
 
+    const rawNonce = this.generateNonce();
+    const hashedNonce = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      rawNonce,
+    );
+
     const credential = await AppleAuthentication.signInAsync({
       requestedScopes: [
         AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
         AppleAuthentication.AppleAuthenticationScope.EMAIL,
       ],
+      nonce: hashedNonce,
     });
 
     if (!credential.identityToken) {
@@ -116,6 +141,7 @@ class AuthService {
     const { data, error } = await supabase.auth.signInWithIdToken({
       provider: 'apple',
       token: credential.identityToken,
+      nonce: rawNonce,
     });
 
     if (error) throw error;
