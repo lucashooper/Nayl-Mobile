@@ -2,6 +2,7 @@
   "expo": {
     "name": "Nayl",
     "slug": "nayl",
+    "scheme": "nayl",
     "owner": "crupid2s-organization",
     "version": "1.0.0",
     "orientation": "portrait",
