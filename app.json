@@ -1,9 +1,9 @@
 {
   "expo": {
     "name": "Nayl",
-    "slug": "nayl",
+    "slug": "nayl-app",
     "scheme": "nayl",
-    "owner": "crupid2s-organization",
+    "owner": "lucashoopers-team",
     "version": "1.0.0",
     "runtimeVersion": "1.0.0",
     "orientation": "portrait",
