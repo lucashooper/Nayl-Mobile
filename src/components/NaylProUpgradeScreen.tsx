@@ -58,6 +58,12 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
   useEffect(() => {
     const loadOfferings = async () => {
       try {
+        // Android sideload / investor builds skip billing until Play + goog_ key exist
+        if (!iapService.isPurchasesEnabled()) {
+          onUnlockPro();
+          return;
+        }
+
         // If already subscribed (e.g. sandbox retry), skip paywall
         const alreadyPro = await iapService.isProUser();
         if (alreadyPro) {

@@ -1,21 +1,22 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import { useAchievements } from '../context/AchievementContext';
 import {
   View,
   Text,
   TouchableOpacity,
   Image,
   ScrollView,
-  SafeAreaView,
   Dimensions,
   Animated,
   StyleSheet,
   DeviceEventEmitter,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useStreak } from '../context/StreakContext';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../constants/theme';
-import { PerformanceMeasureView } from '@shopify/react-native-performance';
+import PerformanceWrapper from '../components/PerformanceWrapper';
 import AnimatedDigit from '../components/AnimatedDigit';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -78,17 +79,22 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   
   // Streak state from context
   const { elapsedSeconds, refreshStreakData, setElapsedSecondsDirectly } = useStreak();
+  const { checkAndUnlockAchievements, achievementsLoaded } = useAchievements();
   
   // Gamification state
   const [isDayCompleteAndUnclaimed, setIsDayCompleteAndUnclaimed] = useState(false);
   const [lastCompletedDay, setLastCompletedDay] = useState<number>(0);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [consecutiveDays, setConsecutiveDays] = useState(0);
-  const [weeklyCheckIns, setWeeklyCheckIns] = useState<boolean[]>(Array(7).fill(false));
-  
+
   // NEW: Dashboard data state for performance optimization
-  const [dashboardData, setDashboardData] = useState<UserDashboard | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const bootDashboard = sessionService.getMemoryDashboard();
+  const [dashboardData, setDashboardData] = useState<UserDashboard | null>(bootDashboard);
+  const [isLoading, setIsLoading] = useState(!bootDashboard);
+  const [consecutiveDays, setConsecutiveDays] = useState(bootDashboard?.consecutive_days ?? 0);
+  const [weeklyCheckIns, setWeeklyCheckIns] = useState<boolean[]>(() => {
+    if (!bootDashboard) return Array(7).fill(false);
+    return Array(7).fill(false).map((_, index) => index < bootDashboard.successful_days_this_week);
+  });
+  const [isInitialized, setIsInitialized] = useState(!!bootDashboard);
   
   // Panic modal state from context
   const { isPanicModalVisible, setIsPanicModalVisible } = usePanicModal();
@@ -189,6 +195,19 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     }
   }, []);
 
+  useLayoutEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  useEffect(() => {
+    if (!isInitialized || !achievementsLoaded) return;
+    const streakDays = Math.floor(elapsedSeconds / 86400);
+    checkAndUnlockAchievements({
+      currentStreak: streakDays,
+      brainRewiringProgress: streakDays,
+    });
+  }, [elapsedSeconds, isInitialized, achievementsLoaded, checkAndUnlockAchievements]);
+
   useEffect(() => {
     const bootstrap = async () => {
       const hasUser = await sessionService.hasUser();
@@ -249,10 +268,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     };
     
     checkTodaySuccess();
-
-    // Load dashboard data immediately
-    loadDashboardData();
-  }, [loadDashboardData]);
+  }, [loadDashboardData, refreshStreakData]);
 
   useEffect(() => {
     const subscription = DeviceEventEmitter.addListener(
@@ -615,9 +631,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   };
 
 
+  if (isLoading) {
+    return (
+      <SafeAreaView
+        edges={['top']}
+        style={{ flex: 1, backgroundColor: colors.primaryBackground }}
+      />
+    );
+  }
+
   return (
-    <PerformanceMeasureView screenName="HomeScreen">
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.primaryBackground }]}>
+    <PerformanceWrapper screenName="HomeScreen">
+      <SafeAreaView
+        edges={['top']}
+        style={[styles.container, { backgroundColor: colors.primaryBackground }]}
+      >
         {/* Premium Background with Gradient */}
         <LinearGradient
           colors={colors.backgroundGradient}
@@ -962,7 +990,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         }}
       />
     </SafeAreaView>
-    </PerformanceMeasureView>
+    </PerformanceWrapper>
   );
 };
 

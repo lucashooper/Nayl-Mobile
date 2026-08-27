@@ -139,6 +139,13 @@ class NailProgressService {
   }
 
   /**
+   * Photos warmed during splash preload (memory cache).
+   */
+  getMemoryPhotos(): NailProgressPhoto[] | null {
+    return this.localCache;
+  }
+
+  /**
    * Get all photos for current user (with caching)
    */
   async getPhotos(): Promise<NailProgressPhoto[]> {

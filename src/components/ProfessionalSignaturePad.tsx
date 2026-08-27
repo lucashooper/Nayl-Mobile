@@ -1,9 +1,7 @@
 import React, { useRef, useImperativeHandle, forwardRef, useState, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, PanResponder, Modal } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import SignatureCanvas from 'react-native-signature-canvas';
 import hapticService, { HapticType, HapticIntensity } from '../services/hapticService';
-
-const { width } = Dimensions.get('window');
 
 interface ProfessionalSignaturePadProps {
   style?: any;
@@ -31,88 +29,44 @@ const ProfessionalSignaturePad = forwardRef<SignaturePadRef, ProfessionalSignatu
 }, ref) => {
   const signatureCanvasRef = useRef<any>(null);
   const [hasSignature, setHasSignature] = useState(false);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [drawingPoints, setDrawingPoints] = useState(0);
 
   useEffect(() => {
-    // Notify parent component about signature state
-    if (onSignatureChange) {
-      onSignatureChange(hasSignature);
-    }
+    onSignatureChange?.(hasSignature);
   }, [hasSignature, onSignatureChange]);
 
-  // Ultra-aggressive PanResponder to prevent ALL gesture conflicts
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        return true;
-      },
-      onPanResponderMove: (evt, gestureState) => {
-        // Block ANY movement that could trigger navigation
-        return true;
-      },
-      onPanResponderRelease: () => {
-        return true;
-      },
-      onPanResponderTerminate: () => {
-        return true;
-      },
-      onPanResponderReject: () => {
-        return true;
-      },
-    })
-  ).current;
-
   const handleSignatureBegin = () => {
-    setIsDrawing(true);
-    setDrawingPoints(0);
     hapticService.trigger(HapticType.SELECTION, HapticIntensity.SUBTLE);
-    if (onBegin) onBegin();
+    onBegin?.();
   };
 
   const handleSignatureEnd = () => {
-    setIsDrawing(false);
     hapticService.trigger(HapticType.SELECTION, HapticIntensity.SUBTLE);
-    
-    // Check if signature exists by counting drawing points
-    if (drawingPoints > 5) {
-      setHasSignature(true);
-    } else {
-      setHasSignature(false);
-    }
-    
-    if (onEnd) onEnd();
+    onEnd?.();
   };
 
-  const handleSignatureChange = (data: any) => {
-    // This gets called during drawing to track signature progress
-    if (data && data.length > 0) {
-      setDrawingPoints(data.length);
-      // If we have enough points, consider it a valid signature
-      if (data.length > 5 && !hasSignature) {
-        setHasSignature(true);
-      }
+  const handleSignatureDraw = () => {
+    if (!hasSignature) {
+      setHasSignature(true);
     }
+  };
+
+  const handleSignatureEmpty = () => {
+    setHasSignature(false);
   };
 
   const clearSignature = () => {
-    if (signatureCanvasRef.current && signatureCanvasRef.current.clear) {
-      signatureCanvasRef.current.clear();
-      setHasSignature(false);
-      setDrawingPoints(0);
-    }
+    signatureCanvasRef.current?.clearSignature?.();
+    signatureCanvasRef.current?.clear?.();
+    setHasSignature(false);
   };
 
   const getSignature = () => {
-    if (signatureCanvasRef.current && signatureCanvasRef.current.toDataURL) {
+    if (signatureCanvasRef.current?.toDataURL) {
       return signatureCanvasRef.current.toDataURL();
     }
     return '';
   };
 
-  // Expose methods via ref
   useImperativeHandle(ref, () => ({
     clearSignature,
     getSignature,
@@ -123,28 +77,15 @@ const ProfessionalSignaturePad = forwardRef<SignaturePadRef, ProfessionalSignatu
       margin: 0;
       box-shadow: none;
       border: none;
-      touch-action: none !important;
-      user-select: none !important;
-      -webkit-user-select: none !important;
-      -webkit-touch-callout: none !important;
-      -webkit-tap-highlight-color: transparent !important;
-      overscroll-behavior: none !important;
-      -webkit-overflow-scrolling: touch !important;
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      z-index: 9999 !important;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
     .m-signature-pad--body {
       border: none;
-      touch-action: none !important;
-      -webkit-user-select: none !important;
-      -webkit-touch-callout: none !important;
-      overscroll-behavior: none !important;
-      position: relative !important;
-      z-index: 10000 !important;
+      touch-action: none;
     }
     .m-signature-pad--footer {
       display: none;
@@ -152,103 +93,51 @@ const ProfessionalSignaturePad = forwardRef<SignaturePadRef, ProfessionalSignatu
     canvas {
       border-radius: 14px;
       border: none;
-      stroke: ${strokeColor} !important;
-      touch-action: none !important;
-      user-select: none !important;
-      -webkit-user-select: none !important;
-      -webkit-touch-callout: none !important;
-      -webkit-tap-highlight-color: transparent !important;
-      overscroll-behavior: none !important;
-      position: relative !important;
-      z-index: 10001 !important;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
-    * {
-      touch-action: none !important;
-      user-select: none !important;
-      -webkit-user-select: none !important;
-      -webkit-touch-callout: none !important;
-      overscroll-behavior: none !important;
-    }
-    body {
-      overscroll-behavior: none !important;
-      -webkit-overflow-scrolling: touch !important;
-      touch-action: none !important;
-      position: fixed !important;
-      overflow: hidden !important;
-    }
-    html {
-      overscroll-behavior: none !important;
-      touch-action: none !important;
-      overflow: hidden !important;
-    }
-    #root {
-      overscroll-behavior: none !important;
-      touch-action: none !important;
-      overflow: hidden !important;
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      touch-action: none;
     }
   `;
 
   return (
-    <>
-      {/* Transparent overlay to capture all gestures when signing */}
-      {isDrawing && (
-        <View 
-          style={styles.gestureOverlay}
-          pointerEvents="box-none"
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          onTouchMove={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          onTouchEnd={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-        />
-      )}
-      
-      <View 
-        style={[styles.container, style, { backgroundColor }]}
-        {...panResponder.panHandlers}
-        onTouchStart={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
+    <View style={[styles.container, style, { backgroundColor }]}>
+      <SignatureCanvas
+        ref={signatureCanvasRef}
+        webStyle={webStyle}
+        penColor={strokeColor}
+        minWidth={strokeWidth}
+        maxWidth={strokeWidth + 1}
+        minDistance={Platform.OS === 'android' ? 0 : 5}
+        backgroundColor="transparent"
+        onBegin={handleSignatureBegin}
+        onEnd={handleSignatureEnd}
+        onDraw={handleSignatureDraw}
+        onEmpty={handleSignatureEmpty}
+        onClear={handleSignatureEmpty}
+        autoClear={false}
+        descriptionText=""
+        clearText=""
+        confirmText=""
+        imageType="image/png"
+        nestedScrollEnabled={false}
+        androidLayerType="software"
+        webviewProps={{
+          androidHardwareAccelerationDisabled: true,
+          overScrollMode: 'never',
+          scrollEnabled: false,
+          bounces: false,
         }}
-        onTouchMove={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        onTouchEnd={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        pointerEvents="box-none"
-        collapsable={false}
-      >
-        <SignatureCanvas
-          ref={signatureCanvasRef}
-          webStyle={webStyle}
-          dataURL=""
-          minWidth={strokeWidth}
-          maxWidth={strokeWidth + 2}
-          backgroundColor="transparent"
-          onBegin={handleSignatureBegin}
-          onEnd={handleSignatureEnd}
-          onOK={() => console.log('Signature OK')}
-          onClear={() => console.log('Signature cleared')}
-          onGetData={() => console.log('Getting signature data')}
-          autoClear={false}
-          descriptionText=""
-          clearText=""
-          confirmText=""
-          imageType="image/png"
-          style={styles.signatureCanvas}
-        />
-      </View>
-    </>
+        style={styles.signatureCanvas}
+      />
+    </View>
   );
 });
 
@@ -265,21 +154,11 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     backgroundColor: '#0A0A0A',
-    zIndex: 1002,
   },
   signatureCanvas: {
     flex: 1,
     borderRadius: 14,
     overflow: 'hidden',
-  },
-  gestureOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-    zIndex: 9999,
   },
 });
 

@@ -11,6 +11,8 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BackButton from '../components/BackButton';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SHADOWS, TYPOGRAPHY } from '../constants/theme';
 import { body, buttonText } from '../constants/typography';
@@ -38,6 +40,7 @@ interface EditStreakScreenProps {
 }
 
 const EditStreakScreen: React.FC<EditStreakScreenProps> = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => {
     // Initialize with a date 1 year ago to ensure we start well in the past
@@ -209,16 +212,8 @@ const EditStreakScreen: React.FC<EditStreakScreenProps> = ({ navigation, route }
         style={styles.backgroundContainer}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              console.log('Back button pressed');
-              navigation.goBack();
-            }}
-          >
-            <Ionicons name="arrow-back" size={28} color={COLORS.primaryText} />
-          </TouchableOpacity>
+        <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
+          <BackButton onPress={() => navigation.goBack()} />
           <Text style={styles.headerTitle}>Edit Streak Date</Text>
           <TouchableOpacity
             style={styles.saveButton}
@@ -246,6 +241,8 @@ const EditStreakScreen: React.FC<EditStreakScreenProps> = ({ navigation, route }
               onDateSelect={handleDateSelect}
               maxDate={new Date()}
               minDate={new Date(2020, 0, 1)}
+              rangeStartDate={selectedDate}
+              rangeEndDate={new Date()}
             />
           </View>
 
@@ -293,6 +290,8 @@ const EditStreakScreen: React.FC<EditStreakScreenProps> = ({ navigation, route }
                   onDateSelect={handleDateSelect}
                   maxDate={new Date()}
                   minDate={new Date(2020, 0, 1)}
+                  rangeStartDate={selectedDate}
+                  rangeEndDate={new Date()}
                 />
               </View>
             </LinearGradient>

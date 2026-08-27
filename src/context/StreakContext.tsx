@@ -26,10 +26,22 @@ interface StreakProviderProps {
   children: ReactNode;
 }
 
+function getInitialStreakAnchorMs(): number {
+  const session = sessionService.getMemorySession();
+  if (session?.start_time) {
+    const startMs = new Date(session.start_time).getTime();
+    if (!Number.isNaN(startMs)) return startMs;
+  }
+  return Date.now();
+}
+
 export const StreakProvider: React.FC<StreakProviderProps> = ({ children }) => {
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const initialAnchorMs = getInitialStreakAnchorMs();
+  const streakStartMsRef = useRef<number>(initialAnchorMs);
+  const [elapsedSeconds, setElapsedSeconds] = useState(() =>
+    sessionService.getBootElapsedSeconds(),
+  );
   const [isLoading, setIsLoading] = useState(false);
-  const streakStartMsRef = useRef<number>(Date.now());
 
   const computeElapsed = useCallback(() => {
     return Math.max(0, Math.floor((Date.now() - streakStartMsRef.current) / 1000));
@@ -59,7 +71,6 @@ export const StreakProvider: React.FC<StreakProviderProps> = ({ children }) => {
     await syncStartTimeFromDatabase();
   }, [syncStartTimeFromDatabase]);
 
-  // Instantly set elapsed time by adjusting the local anchor — no DB round-trip
   const setElapsedSecondsDirectly = useCallback((seconds: number) => {
     streakStartMsRef.current = Date.now() - seconds * 1000;
     setElapsedSeconds(seconds);
@@ -105,7 +116,6 @@ export const StreakProvider: React.FC<StreakProviderProps> = ({ children }) => {
     return () => subscription.remove();
   }, [syncStartTimeFromDatabase]);
 
-  // Tick locally from anchor — avoids DB race conditions on reset
   useEffect(() => {
     const timer = setInterval(() => {
       const elapsed = computeElapsed();

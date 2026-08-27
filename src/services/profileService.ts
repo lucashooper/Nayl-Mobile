@@ -15,6 +15,16 @@ export interface ProfileData {
 }
 
 class ProfileService {
+  private memoryProfile: ProfileData | null = null;
+
+  getMemoryProfile(): ProfileData | null {
+    return this.memoryProfile;
+  }
+
+  clearMemoryCache(): void {
+    this.memoryProfile = null;
+  }
+
   private async getUserId(): Promise<string> {
     // Use the session service to get the current user ID
     return await sessionService.getCurrentUserId();
@@ -121,7 +131,9 @@ class ProfileService {
       const key = await sessionService.getUserStorageKey(PROFILE_CACHE_KEY);
       const cached = await AsyncStorage.getItem(key);
       if (cached) {
-        return JSON.parse(cached) as ProfileData;
+        const parsed = JSON.parse(cached) as ProfileData;
+        this.memoryProfile = parsed;
+        return parsed;
       }
     } catch {
       // Ignore cache read errors
@@ -140,6 +152,7 @@ class ProfileService {
   }
 
   private async cacheProfileData(data: ProfileData): Promise<void> {
+    this.memoryProfile = data;
     try {
       const key = await sessionService.getUserStorageKey(PROFILE_CACHE_KEY);
       await AsyncStorage.setItem(key, JSON.stringify(data));

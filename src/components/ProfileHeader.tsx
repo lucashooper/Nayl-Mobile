@@ -6,13 +6,25 @@ import { USER_SESSION_CHANGED } from '../services/sessionService';
 
 function getInitials(name: string): string {
   const trimmed = name.trim();
-  if (!trimmed || trimmed === 'Your Name') return '?';
+  if (!trimmed) return '?';
 
   const parts = trimmed.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
   return trimmed.slice(0, 2).toUpperCase();
+}
+
+function getInitialProfileState(): { name: string; pictureUrl: string | null; isLoaded: boolean } {
+  const memory = profileService.getMemoryProfile();
+  if (memory) {
+    return {
+      name: memory.profile_name?.trim() || '',
+      pictureUrl: memory.profile_picture_url || null,
+      isLoaded: Boolean(memory.profile_name?.trim()),
+    };
+  }
+  return { name: '', pictureUrl: null, isLoaded: false };
 }
 
 interface ProfileHeaderProps {
@@ -22,30 +34,35 @@ interface ProfileHeaderProps {
   showName?: boolean;
 }
 
-const ProfileHeader: React.FC<ProfileHeaderProps> = ({ 
+const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   size = 'medium',
   onPress,
   navigation,
-  showName = false
+  showName = false,
 }) => {
   const themeResult = useThemeGuaranteed();
   const colors = themeResult?.colors;
-  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
-  const [profileName, setProfileName] = useState<string>('Your Name');
-  const [isLoading, setIsLoading] = useState(true);
+  const initial = getInitialProfileState();
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(initial.pictureUrl);
+  const [profileName, setProfileName] = useState<string>(initial.name);
+  const [isLoading, setIsLoading] = useState(!initial.isLoaded);
 
   const loadProfilePicture = async () => {
     try {
       const cached = await profileService.getCachedProfileData();
       if (cached) {
         setProfilePictureUrl(cached.profile_picture_url || null);
-        setProfileName(cached.profile_name || 'Your Name');
-        setIsLoading(false);
+        if (cached.profile_name?.trim()) {
+          setProfileName(cached.profile_name.trim());
+          setIsLoading(false);
+        }
       }
 
       const profileData = await profileService.getProfileData();
       setProfilePictureUrl(profileData.profile_picture_url || null);
-      setProfileName(profileData.profile_name || 'Your Name');
+      if (profileData.profile_name?.trim() && profileData.profile_name !== 'Your Name') {
+        setProfileName(profileData.profile_name.trim());
+      }
     } catch (error) {
       console.error('Error loading profile picture:', error);
     } finally {
@@ -54,7 +71,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   };
 
   useEffect(() => {
-    loadProfilePicture();
+    if (!initial.isLoaded) {
+      loadProfilePicture();
+    }
 
     const sessionSubscription = DeviceEventEmitter.addListener(USER_SESSION_CHANGED, loadProfilePicture);
     const profileSubscription = DeviceEventEmitter.addListener(
@@ -79,21 +98,23 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     };
   }, []);
 
-  // Enhanced safety check for theme colors
-  if (!colors || 
-      typeof colors !== 'object' || 
-      !colors.primaryBackground || 
-      !colors.primaryText ||
-      !colors.primaryAccent) {
-    console.warn('⚠️ ProfileHeader: Theme colors not ready, using fallback');
+  if (
+    !colors ||
+    typeof colors !== 'object' ||
+    !colors.primaryBackground ||
+    !colors.primaryText ||
+    !colors.primaryAccent
+  ) {
     return (
-      <View style={{ 
-        height: 120, 
-        backgroundColor: '#2A2A2A', 
-        borderRadius: 16,
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}>
+      <View
+        style={{
+          height: 120,
+          backgroundColor: '#2A2A2A',
+          borderRadius: 16,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
         <Text style={{ color: '#FFFFFF', fontSize: 16 }}>Loading profile...</Text>
       </View>
     );
@@ -105,20 +126,19 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         return { width: 32, height: 32, borderRadius: 16 };
       case 'large':
         return { width: 48, height: 48, borderRadius: 24 };
-      default: // medium
+      default:
         return { width: 40, height: 40, borderRadius: 20 };
     }
   };
 
   const sizeStyles = getSizeStyles();
-
   const initialsFontSize = size === 'small' ? 12 : size === 'large' ? 18 : 14;
 
   const renderProfileContent = () => {
     if (profilePictureUrl) {
       return (
-        <Image 
-          source={{ uri: profilePictureUrl }} 
+        <Image
+          source={{ uri: profilePictureUrl }}
           style={[styles.profileImage, sizeStyles]}
           resizeMode="cover"
           fadeDuration={0}
@@ -135,20 +155,27 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     );
   };
 
+  const renderName = () => {
+    if (!showName) return null;
+    if (isLoading && !profileName) {
+      return <View style={styles.nameSkeleton} />;
+    }
+    if (!profileName) return null;
+    return (
+      <Text style={styles.profileName} numberOfLines={1}>
+        {profileName}
+      </Text>
+    );
+  };
+
   return (
-    <TouchableOpacity 
-      style={styles.wrapper} 
+    <TouchableOpacity
+      style={styles.wrapper}
       onPress={onPress || (() => navigation?.navigate('Profile'))}
       activeOpacity={0.8}
     >
-      <View style={[styles.container, sizeStyles]}>
-        {renderProfileContent()}
-      </View>
-      {showName && (
-        <Text style={styles.profileName} numberOfLines={1}>
-          {profileName}
-        </Text>
-      )}
+      <View style={[styles.container, sizeStyles]}>{renderProfileContent()}</View>
+      {renderName()}
     </TouchableOpacity>
   );
 };
@@ -184,12 +211,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  placeholder: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 999,
-    opacity: 0.3,
-  },
   profileName: {
     color: '#FFFFFF',
     fontSize: 16,
@@ -198,6 +219,12 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  nameSkeleton: {
+    width: 88,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
 });
 

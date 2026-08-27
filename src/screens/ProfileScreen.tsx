@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, Alert, ScrollView, TextInput, Linking, DeviceEventEmitter } from 'react-native';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { View, Text, TouchableOpacity, Image, Alert, ScrollView, TextInput, Linking, DeviceEventEmitter, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationProp, CommonActions } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
@@ -12,8 +11,10 @@ import profileService, { ProfileData } from '../services/profileService';
 import sessionService, { USER_SESSION_CHANGED } from '../services/sessionService';
 import authService from '../services/authService';
 import iapService from '../services/iapService';
+import { openCameraCapture, openPhotoLibraryPicker } from '../utils/mediaPermissions';
 
 import { PRIVACY_POLICY_URL, SUPPORT_URL, TERMS_URL } from '../constants/legalUrls';
+import BackButton from '../components/BackButton';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -31,20 +32,46 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   
   // Profile data state
+  const bootProfile = profileService.getMemoryProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [profileData, setProfileData] = useState({
-    profile_name: 'Your Name',
-    longest_streak_seconds: 0,
-    consecutive_days: 0,
-    total_days_logged_in: 0
+    profile_name: bootProfile?.profile_name || 'Your Name',
+    longest_streak_seconds: bootProfile?.longest_streak_seconds || 0,
+    consecutive_days: bootProfile?.consecutive_days || 0,
+    total_days_logged_in: bootProfile?.total_days_logged_in || 0,
   });
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(
+    bootProfile?.profile_picture_url ?? null,
+  );
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [authProvider, setAuthProvider] = useState<string | null>(null);
   const [showNameEditModal, setShowNameEditModal] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  // Star animation state (like HomeScreen)
+  const [starPositions, setStarPositions] = useState(() => 
+    Array.from({ length: 60 }, () => ({
+      x: Math.random() * 400,
+      y: Math.random() * 800,
+      opacity: Math.random() * 0.6 + 0.15,
+      speed: Math.random() * 0.15 + 0.03,
+      directionX: (Math.random() - 0.5) * 1.5,
+      directionY: (Math.random() - 0.5) * 1.5,
+      size: Math.random() * 2.5 + 0.6,
+    }))
+  );
+
+  const solidCardStyle = {
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+    overflow: 'hidden' as const,
+    ...(Platform.OS === 'android'
+      ? { elevation: 0, shadowOpacity: 0, shadowRadius: 0 }
+      : {}),
+  };
   
   // Check if theme context is ready
   if (!isReady || !colors) {
@@ -55,11 +82,39 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     );
   }
 
-  // Load basic profile data on mount
+  // Star animation effect (like HomeScreen)
   useEffect(() => {
+    const animationInterval = setInterval(() => {
+      setStarPositions(prevStars => 
+        prevStars.map(star => {
+          let newX = star.x + star.directionX * star.speed;
+          let newY = star.y + star.directionY * star.speed;
+          
+          // Wrap around screen edges
+          if (newX > 400) newX = 0;
+          if (newX < 0) newX = 400;
+          if (newY > 800) newY = 0;
+          if (newY < 0) newY = 800;
+          
+          return {
+            ...star,
+            x: newX,
+            y: newY,
+          };
+        })
+      );
+    }, 50);
+    
+    return () => clearInterval(animationInterval);
+  }, []);
+
+  // Load basic profile data on mount — cache first via layout effect
+  useLayoutEffect(() => {
     loadBasicProfileData();
     loadAccountInfo();
+  }, []);
 
+  useEffect(() => {
     const subscription = DeviceEventEmitter.addListener(
       USER_SESSION_CHANGED,
       (userId: string | null) => {
@@ -145,22 +200,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   const pickImage = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant permission to access your photo library.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+      const uri = await openPhotoLibraryPicker({
+        allowsEditing: Platform.OS === 'ios',
         aspect: [1, 1],
         quality: 0.8,
       });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        await handleImageUpload(result.assets[0].uri);
+      if (uri) {
+        await handleImageUpload(uri);
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -170,21 +216,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
   const takePhoto = async () => {
     try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant permission to access your camera.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
+      const uri = await openCameraCapture({
+        allowsEditing: Platform.OS === 'ios',
         aspect: [1, 1],
         quality: 0.8,
       });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        await handleImageUpload(result.assets[0].uri);
+      if (uri) {
+        await handleImageUpload(uri);
       }
     } catch (error) {
       console.error('Error taking photo:', error);
@@ -301,7 +339,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   const handleLogout = () => {
     Alert.alert(
       'Log Out',
-      'Are you sure you want to log out?',
+      'Are you sure you want to log out? Your local data will remain on this device.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -310,12 +348,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           onPress: async () => {
             try {
               setIsLoggingOut(true);
+
+              try {
+                await iapService.logOut();
+              } catch (iapError) {
+                console.warn('IAP logout skipped:', iapError);
+              }
+
               await sessionService.logout();
-              await authService.signOut();
-              await iapService.logOut();
+              profileService.clearMemoryCache();
+
+              try {
+                await authService.signOut();
+              } catch (authError) {
+                console.warn('Auth sign-out skipped:', authError);
+              }
+
               resetToOnboarding();
             } catch (error) {
-              Alert.alert('Error', 'Could not log out. Please try again.');
+              console.error('Logout error:', error);
+              Alert.alert('Logout Error', 'Could not log out. Please try again or restart the app.');
             } finally {
               setIsLoggingOut(false);
             }
@@ -363,25 +415,25 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         }}
       />
       
-      {/* Starfield Animation - Enhanced */}
+      {/* Starfield Animation - Smooth like HomeScreen */}
       <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }}>
-        {Array.from({ length: 60 }, (_, index) => (
+        {starPositions.map((star, index) => (
           <View
             key={index}
             style={{
               position: 'absolute',
-              left: Math.random() * 400,
-              top: Math.random() * 800,
-              width: Math.random() * 2.5 + 0.6,
-              height: Math.random() * 2.5 + 0.6,
-              backgroundColor: 'rgba(200, 200, 200, 0.7)',
-              borderRadius: (Math.random() * 2.5 + 0.6) / 2,
-              opacity: Math.random() * 0.6 + 0.15,
-              shadowColor: 'rgba(255, 255, 255, 0.3)',
+              left: star.x,
+              top: star.y,
+              width: star.size,
+              height: star.size,
+              backgroundColor: 'rgba(255, 255, 255, 0.4)',
+              borderRadius: star.size / 2,
+              opacity: star.opacity * 0.4,
+              shadowColor: 'rgba(255, 255, 255, 0.2)',
               shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.5,
-              shadowRadius: 1.5,
-              elevation: 2,
+              shadowOpacity: 0.3,
+              shadowRadius: 1,
+              elevation: 1,
             }}
           />
         ))}
@@ -402,16 +454,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           position: 'relative',
         }}>
           {/* Back button positioned absolutely on the left */}
-          <TouchableOpacity style={{
+          <View style={{
             position: 'absolute',
             left: 0,
-            width: 40,
-            height: 40,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }} onPress={() => navigation.navigate('Home' as never)}>
-            <Ionicons name="chevron-back" size={28} color={colors.primaryText} />
-          </TouchableOpacity>
+          }}>
+            <BackButton onPress={() => navigation.navigate('Home' as never)} color={colors.primaryText} />
+          </View>
           
           {/* Centered title */}
           <Text style={{
@@ -435,27 +483,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         <View style={{ alignItems: 'center', paddingVertical: SPACING.lg }}>
           {/* Profile Image */}
           <TouchableOpacity 
-            style={{ marginBottom: SPACING.lg }}
-            onPress={() => {
-              Alert.alert(
-                'Choose Profile Picture',
-                'How would you like to add a profile picture?',
-                [
-                  {
-                    text: 'Take Photo',
-                    onPress: () => takePhoto(),
-                  },
-                  {
-                    text: 'Choose from Library',
-                    onPress: () => pickImage(),
-                  },
-                  {
-                    text: 'Cancel',
-                    style: 'cancel',
-                  },
-                ]
-              );
-            }}
+            style={{ marginBottom: SPACING.sm }}
+            onPress={pickImage}
           >
             {profileImage ? (
               <Image 
@@ -503,8 +532,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             }}>
               <Ionicons name="camera" size={16} color="#FFFFFF" />
             </View>
-            
-            {/* Loading Overlay */}
+
             {isLoading && (
               <View style={{ 
                 position: 'absolute',
@@ -526,6 +554,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
                 }}>Uploading...</Text>
               </View>
             )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={takePhoto}
+            style={{ marginBottom: SPACING.lg }}
+            accessibilityRole="button"
+            accessibilityLabel="Take profile photo with camera"
+          >
+            <Text style={{ color: colors.secondaryText, fontSize: 13, textAlign: 'center' }}>
+              Or take a photo with camera
+            </Text>
           </TouchableOpacity>
           
           {/* Profile Name - Now Editable */}
@@ -592,17 +630,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         <View style={{ flexDirection: 'row', marginBottom: SPACING.xl, gap: SPACING.md }}>
           <View style={{ 
             flex: 1,
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            ...solidCardStyle,
             borderRadius: SPACING.md,
             padding: SPACING.md,
             alignItems: 'center',
-            borderWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.08)',
-            shadowColor: colors.primaryAccent,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 4,
           }}>
             <View style={{ 
               flexDirection: 'row', 
@@ -634,17 +665,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           
           <View style={{ 
             flex: 1,
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            ...solidCardStyle,
             borderRadius: SPACING.md,
             padding: SPACING.md,
             alignItems: 'center',
-            borderWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.08)',
-            shadowColor: colors.primaryAccent,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 4,
           }}>
             <View style={{ 
               flexDirection: 'row', 
@@ -679,10 +703,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
           <View style={{
             padding: SPACING.lg,
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            ...solidCardStyle,
             borderRadius: SPACING.md,
-            borderWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.08)',
             marginBottom: SPACING.sm,
           }}>
             {accountEmail ? (
@@ -715,73 +737,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               </Text>
             )}
           </View>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingVertical: SPACING.md,
-              paddingHorizontal: SPACING.lg,
-              backgroundColor: 'rgba(239, 68, 68, 0.08)',
-              borderRadius: SPACING.md,
-              marginBottom: SPACING.sm,
-              borderWidth: 1,
-              borderColor: 'rgba(239, 68, 68, 0.25)',
-            }}
-            onPress={handleDeleteAccount}
-            disabled={isDeletingAccount || isLoggingOut}
-          >
-            <View style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: SPACING.md,
-              borderWidth: 1,
-              borderColor: 'rgba(239, 68, 68, 0.3)',
-            }}>
-              <Ionicons name="trash-outline" size={20} color="#EF4444" />
-            </View>
-            <Text style={{ fontSize: 16, color: '#EF4444', fontWeight: '600', flex: 1 }}>
-              {isDeletingAccount ? 'Deleting account…' : 'Delete Account'}
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#EF4444" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingVertical: SPACING.md,
-              paddingHorizontal: SPACING.lg,
-              backgroundColor: 'rgba(15, 23, 42, 0.6)',
-              borderRadius: SPACING.md,
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.08)',
-            }}
-            onPress={handleLogout}
-            disabled={isLoggingOut || isDeletingAccount}
-          >
-            <View style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: SPACING.md,
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.1)',
-            }}>
-              <Ionicons name="log-out-outline" size={20} color={colors.primaryText} />
-            </View>
-            <Text style={{ fontSize: 16, color: colors.primaryText, fontWeight: '500', flex: 1 }}>
-              {isLoggingOut ? 'Logging out…' : 'Log Out'}
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
-          </TouchableOpacity>
         </View>
 
         {/* Complex Streak Card with Gradients */}
@@ -789,11 +744,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
           marginBottom: SPACING.lg,
           borderRadius: SPACING.lg,
           overflow: 'hidden',
-          elevation: 8,
-          shadowColor: colors.primaryAccent,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
+          ...(Platform.OS === 'android'
+            ? { elevation: 0, shadowOpacity: 0 }
+            : {
+                elevation: 8,
+                shadowColor: colors.primaryAccent,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+              }),
         }}>
           <LinearGradient
             colors={[
@@ -992,16 +951,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
             alignItems: 'center',
             paddingVertical: SPACING.md,
             paddingHorizontal: SPACING.lg,
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            ...solidCardStyle,
             borderRadius: SPACING.md,
             marginBottom: SPACING.sm,
-            borderWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.08)',
-            shadowColor: colors.primaryAccent,
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
-            elevation: 4,
           }}
           onPress={() => navigation.navigate('TriggerHistory')}
           >
@@ -1033,16 +985,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               alignItems: 'center',
               paddingVertical: SPACING.md,
               paddingHorizontal: SPACING.lg,
-              backgroundColor: 'rgba(15, 23, 42, 0.6)',
+              ...solidCardStyle,
               borderRadius: SPACING.md,
               marginBottom: SPACING.sm,
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.08)',
-              shadowColor: colors.primaryAccent,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
             }}
             onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
           >
@@ -1074,16 +1019,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               alignItems: 'center',
               paddingVertical: SPACING.md,
               paddingHorizontal: SPACING.lg,
-              backgroundColor: 'rgba(15, 23, 42, 0.6)',
+              ...solidCardStyle,
               borderRadius: SPACING.md,
               marginBottom: SPACING.sm,
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.08)',
-              shadowColor: colors.primaryAccent,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
             }}
             onPress={() => Linking.openURL(TERMS_URL)}
           >
@@ -1115,16 +1053,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               alignItems: 'center',
               paddingVertical: SPACING.md,
               paddingHorizontal: SPACING.lg,
-              backgroundColor: 'rgba(15, 23, 42, 0.6)',
+              ...solidCardStyle,
               borderRadius: SPACING.md,
               marginBottom: SPACING.sm,
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.08)',
-              shadowColor: colors.primaryAccent,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 8,
-              elevation: 4,
             }}
             onPress={() => Linking.openURL(SUPPORT_URL)}
           >
@@ -1243,6 +1174,74 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
               )}
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Account actions — pinned to bottom of profile */}
+        <View style={{ marginTop: SPACING.xl, marginBottom: SPACING.xxxl }}>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: SPACING.md,
+              paddingHorizontal: SPACING.lg,
+              ...solidCardStyle,
+              borderRadius: SPACING.md,
+              marginBottom: SPACING.sm,
+            }}
+            onPress={handleLogout}
+            disabled={isLoggingOut || isDeletingAccount}
+          >
+            <View style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: SPACING.md,
+              borderWidth: 1,
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+            }}>
+              <Ionicons name="log-out-outline" size={20} color={colors.primaryText} />
+            </View>
+            <Text style={{ fontSize: 16, color: colors.primaryText, fontWeight: '500', flex: 1 }}>
+              {isLoggingOut ? 'Logging out…' : 'Log Out'}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: SPACING.md,
+              paddingHorizontal: SPACING.lg,
+              backgroundColor: 'rgba(239, 68, 68, 0.08)',
+              borderRadius: SPACING.md,
+              borderWidth: 1,
+              borderColor: 'rgba(239, 68, 68, 0.25)',
+            }}
+            onPress={handleDeleteAccount}
+            disabled={isDeletingAccount || isLoggingOut}
+          >
+            <View style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: SPACING.md,
+              borderWidth: 1,
+              borderColor: 'rgba(239, 68, 68, 0.3)',
+            }}>
+              <Ionicons name="trash-outline" size={20} color="#EF4444" />
+            </View>
+            <Text style={{ fontSize: 16, color: '#EF4444', fontWeight: '600', flex: 1 }}>
+              {isDeletingAccount ? 'Deleting account…' : 'Delete Account'}
+            </Text>
+            <Ionicons name="chevron-forward" size={20} color="#EF4444" />
+          </TouchableOpacity>
         </View>
 
 

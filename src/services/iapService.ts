@@ -6,11 +6,34 @@ import Purchases, {
   PURCHASES_ERROR_CODE,
 } from 'react-native-purchases';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import sessionService from './sessionService';
 
 const REVENUECAT_IOS_API_KEY =
-  process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? '';
+  process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim() ?? '';
+const REVENUECAT_ANDROID_API_KEY =
+  process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY?.trim() ?? '';
+
+/** Production Android keys start with goog_. Test keys (test_) must not be used in release builds. */
+function hasAndroidProductionKey(): boolean {
+  return (
+    REVENUECAT_ANDROID_API_KEY.startsWith('goog_') &&
+    !REVENUECAT_ANDROID_API_KEY.includes('REPLACE')
+  );
+}
+
+function hasIosKey(): boolean {
+  return Boolean(REVENUECAT_IOS_API_KEY) && !REVENUECAT_IOS_API_KEY.includes('REPLACE');
+}
+
+/** Whether RevenueCat should be initialized on this platform (Insight-style Android sideload fallback). */
+export function isPurchasesEnabled(): boolean {
+  if (Platform.OS === 'android') {
+    return hasAndroidProductionKey();
+  }
+  return hasIosKey();
+}
 
 const ENTITLEMENT_ID = 'default';
 const SUBSCRIPTION_STATUS_BASE = '@nayl_is_pro';
@@ -47,6 +70,10 @@ function hasProAccess(customerInfo: CustomerInfo): boolean {
 class IAPService {
   private initialized = false;
 
+  isPurchasesEnabled(): boolean {
+    return isPurchasesEnabled();
+  }
+
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
@@ -57,16 +84,25 @@ class IAPService {
       return;
     }
 
-    if (!REVENUECAT_IOS_API_KEY || REVENUECAT_IOS_API_KEY.includes('REPLACE')) {
-      console.warn('RevenueCat iOS API key is not configured.');
+    if (!isPurchasesEnabled()) {
+      if (__DEV__) {
+        console.warn(
+          Platform.OS === 'android'
+            ? 'RevenueCat skipped on Android — no production goog_ API key (investor/sideload mode).'
+            : 'RevenueCat iOS API key is not configured.',
+        );
+      }
       return;
     }
+
+    const apiKey =
+      Platform.OS === 'android' ? REVENUECAT_ANDROID_API_KEY : REVENUECAT_IOS_API_KEY;
 
     try {
       if (__DEV__) {
         await Purchases.setLogLevel(LOG_LEVEL.DEBUG);
       }
-      Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY });
+      Purchases.configure({ apiKey });
       this.initialized = true;
     } catch (error) {
       console.error('RevenueCat initialization error:', error);
@@ -104,6 +140,10 @@ class IAPService {
     } catch (error) {
       console.error('RevenueCat logout error:', error);
     }
+  }
+
+  async grantDemoAccess(): Promise<void> {
+    await this.cacheProStatus(true);
   }
 
   private async cacheProStatus(isPro: boolean): Promise<void> {

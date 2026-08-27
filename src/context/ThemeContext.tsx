@@ -210,43 +210,7 @@ const ThemeContext = createContext<ThemeContextType>(FALLBACK_THEME);
 // Note: React Native 0.79.5 may have different context behavior
 // We'll handle this through proper error boundaries and fallbacks
 
-// Error boundary component for theme context
-class ThemeErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    console.error('❌ ThemeErrorBoundary caught error:', error);
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('❌ ThemeErrorBoundary error details:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      // Fallback UI when theme context fails
-      return (
-        <View style={{ 
-          flex: 1, 
-          backgroundColor: '#000000',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}>
-          <Text style={{ color: '#FFFFFF', fontSize: 16 }}>Theme Error - Please restart app</Text>
-        </View>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+// Error boundary removed — theme always provides a synchronous fallback.
 
 // Main useTheme hook with improved error handling
 export const useTheme = (): ThemeContextType => {
@@ -341,32 +305,22 @@ export function withThemeSafety<P extends object>(
       const isReady = themeResult?.isReady;
       
       if (!isReady || !colors) {
-        // Show a minimal fallback while theme loads
         return (
-          <View style={{ 
-            flex: 1, 
+          <View style={{
+            flex: 1,
             backgroundColor: '#000000',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
-            <Text style={{ color: '#FFFFFF' }}>Loading theme...</Text>
-          </View>
+          }} />
         );
       }
       
       return <Component {...props} colors={colors} />;
     } catch (error) {
       console.error('❌ withThemeSafety error:', error);
-      // Fallback UI on error
       return (
-        <View style={{ 
-          flex: 1, 
+        <View style={{
+          flex: 1,
           backgroundColor: '#000000',
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}>
-          <Text style={{ color: '#FFFFFF' }}>Theme error</Text>
-        </View>
+        }} />
       );
     }
   };
@@ -374,18 +328,12 @@ export function withThemeSafety<P extends object>(
 
 // Main ThemeProvider component
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return (
-    <ThemeErrorBoundary>
-      <ThemeProviderContent>{children}</ThemeProviderContent>
-    </ThemeErrorBoundary>
-  );
+  return <ThemeProviderContent>{children}</ThemeProviderContent>;
 };
 
 // Internal ThemeProvider content
 const ThemeProviderContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState<ThemeType>('midnight');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     loadSavedTheme();
@@ -394,20 +342,13 @@ const ThemeProviderContent: React.FC<{ children: React.ReactNode }> = ({ childre
   const loadSavedTheme = async () => {
     try {
       const savedTheme = await AsyncStorage.getItem('selectedTheme');
-      if (savedTheme && (savedTheme === 'midnight' || savedTheme === 'ocean' || savedTheme === 'twilight')) {
-        setCurrentTheme(savedTheme === 'ocean' ? 'midnight' : (savedTheme as ThemeType));
-      } else {
-        // No saved theme, use default
+      if (savedTheme === 'midnight' || savedTheme === 'twilight') {
+        setCurrentTheme(savedTheme);
+      } else if (savedTheme === 'ocean') {
         setCurrentTheme('midnight');
       }
     } catch (error) {
       console.error('❌ ThemeProvider error loading saved theme:', error);
-      // Fallback to midnight theme on error
-      setCurrentTheme('midnight');
-    } finally {
-      setIsLoading(false);
-      // Only set initialized to true after a small delay to ensure state updates
-      setTimeout(() => setIsInitialized(true), 100);
     }
   };
 
@@ -466,7 +407,7 @@ const ThemeProviderContent: React.FC<{ children: React.ReactNode }> = ({ childre
       colors: hardcodedColors,
       setTheme,
       toggleTheme,
-      isReady: isInitialized,
+      isReady: true,
     };
     
     return (
@@ -523,32 +464,15 @@ const ThemeProviderContent: React.FC<{ children: React.ReactNode }> = ({ childre
     } as ThemeColors;
   }
   
-  // Create context value with guaranteed valid colors
   const contextValue: ThemeContextType = {
     currentTheme,
-    colors: finalColors, // This is guaranteed to be valid
+    colors: finalColors,
     setTheme,
     toggleTheme,
-    isReady: isInitialized, // Mark as ready when initialized
+    isReady: true,
   };
 
-  // Don't render children until theme is loaded and validated
-  if (isLoading || !isInitialized) {
-    console.log('⏳ ThemeProvider still loading, showing loading state');
-    return (
-      <View style={{ flex: 1, backgroundColor: '#000000' }}>
-        {/* Simple loading state */}
-      </View>
-    );
-  }
-
-  // Comprehensive validation before providing context
-  if (!contextValue || 
-      !contextValue.colors || 
-      typeof contextValue.colors !== 'object' ||
-      !contextValue.colors.primaryBackground ||
-      !contextValue.colors.primaryText) {
-    console.error('❌ Context validation failed, using fallback. Context:', contextValue);
+  if (!contextValue.colors?.primaryBackground || !contextValue.colors?.primaryText) {
     return (
       <ThemeContext.Provider value={FALLBACK_THEME}>
         {children}
@@ -556,19 +480,8 @@ const ThemeProviderContent: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   }
 
-  // Only mark as ready when colors are fully validated
-  const finalContextValue = {
-    ...contextValue,
-    isReady: true
-  };
-
-  console.log('✅ ThemeProvider successfully created context with colors:', {
-    primaryBackground: finalContextValue.colors.primaryBackground,
-    primaryText: finalContextValue.colors.primaryText
-  });
-
   return (
-    <ThemeContext.Provider value={finalContextValue}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );

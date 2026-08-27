@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { View, StyleSheet, Platform, TouchableOpacity, Text } from 'react-native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import {
   Inter_400Regular,
@@ -15,7 +16,6 @@ import {
   Inter_900Black,
 } from '@expo-google-fonts/inter';
 import { LinearGradient } from 'expo-linear-gradient';
-import { PerformanceMeasureView } from '@shopify/react-native-performance';
 
 // Import contexts
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -45,18 +45,21 @@ import NailProgressScreen from './src/screens/NailProgressScreen';
 import { HomeStack, ProfileStack, LibraryStack } from './src/navigation/StackNavigator';
 
 // Import components
-import { User, Book, House, Trophy, ChartBar } from 'phosphor-react-native';
+import { User, Book, House } from 'phosphor-react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 // Import constants
 import { COLORS } from './src/constants/theme';
 import hapticService, { HapticType, HapticIntensity } from './src/services/hapticService';
-import { preloadCriticalAssets, preloadDeferredAssets } from './src/utils/assetPreloader';
+import { preloadSplashAssets, preloadDeferredAssets, preloadUserSessionData } from './src/utils/assetPreloader';
+import { applyPendingUpdateIfAvailable } from './src/utils/appUpdates';
 import AppLoadingScreen from './src/components/AppLoadingScreen';
+import QuickActionsModal from './src/components/QuickActionsModal';
 import iapService from './src/services/iapService';
 import authService from './src/services/authService';
 
 const Tab = createBottomTabNavigator();
+const navigationRef = createNavigationContainerRef<any>();
 
 // Simple function to control meditation state
 export const setMeditationActive = (active: boolean) => {
@@ -75,8 +78,12 @@ function AppContent() {
   const { colors } = useTheme();
   const { isPanicModalVisible } = usePanicModal();
   const { isMeditationActive } = useMeditation();
+  const insets = useSafeAreaInsets();
+  const tabBarBottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 8 : 0);
+  const tabBarHeight = 64 + tabBarBottomInset;
   
   const [isOnboardingScreen, setIsOnboardingScreen] = useState(false);
+  const [quickMenuVisible, setQuickMenuVisible] = useState(false);
 
   useEffect(() => {
     preloadDeferredAssets();
@@ -85,7 +92,9 @@ function AppContent() {
   // Removed problematic Image.prefetch that was causing URL request handler errors
   
   return (
+    <>
     <NavigationContainer
+      ref={navigationRef}
       onStateChange={(state) => {
         // Check if current route is an onboarding screen
         if (state?.routes && state.index !== undefined) {
@@ -98,22 +107,26 @@ function AppContent() {
                 currentStackRoute.name === 'Login');
             
             setIsOnboardingScreen(isOnboarding || false);
+          } else {
+            // No nested routes - check if we're on the Home tab showing onboarding
+            const isHomeTab = currentRoute?.name === 'Home';
+            setIsOnboardingScreen(false);
           }
         }
       }}
     >
       <Tab.Navigator
         screenOptions={{
+          lazy: true,
           headerShown: false,
           tabBarStyle: {
-            // Completely transparent footer to eliminate white edges
             backgroundColor: 'transparent',
             borderTopColor: 'transparent',
             borderTopWidth: 0,
-            height: 80,
-            paddingBottom: 6, // Reduced from 10 to move content higher
-            paddingTop: 6, // Reduced from 10 to move content higher
-            display: (isPanicModalVisible || isMeditationActive || isOnboardingScreen) ? 'none' : 'flex', // Hide tab bar when panic modal is visible, during meditation, or on onboarding screens
+            height: tabBarHeight,
+            paddingBottom: tabBarBottomInset,
+            paddingTop: 8,
+            display: (isPanicModalVisible || isMeditationActive || isOnboardingScreen) ? 'none' : 'flex',
             
             // Remove all shadows and borders
             shadowColor: 'transparent',
@@ -140,7 +153,7 @@ function AppContent() {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: 80,
+                height: tabBarHeight,
                 // Premium shadow
                 shadowColor: '#000000',
                 shadowOffset: { width: 0, height: -4 },
@@ -248,33 +261,67 @@ function AppContent() {
             ),
           }}
         />
-        
-        {/* Analytics Tab - Bar chart icon with subtle green glow */}
-        <Tab.Screen 
-          name="Analytics" 
-          component={AnalyticsScreen}
+
+        {/* Center Quick Actions (+) */}
+        <Tab.Screen
+          name="QuickActions"
+          component={HomeStack}
           options={{
-            tabBarIcon: ({ focused, color }) => (
-              <View style={{
-                padding: 8,
-                borderRadius: 12,
-                // Active tab background indicator - subtle green glow (same as other tabs)
-                backgroundColor: focused ? 'rgba(193, 255, 114, 0.05)' : 'transparent',
-                // Icon glow effect for active state
-                shadowColor: focused ? colors.iconGlow : 'transparent',
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: focused ? 0.4 : 0,
-                shadowRadius: 6,
-                elevation: focused ? 2 : 0,
-              }}>
-                <ChartBar 
-                  size={TAB_ICON_SIZE} 
-                  color={focused ? colors.iconActivePrimary : colors.iconInactivePrimary}
-                  secondaryColor={focused ? colors.iconActiveSecondary : colors.iconInactiveSecondary}
-                  weight="duotone"
-                />
-              </View>
+            tabBarLabel: () => null,
+            tabBarIcon: () => null,
+            tabBarButton: (props) => (
+              <TouchableOpacity
+                {...props}
+                accessibilityRole="button"
+                accessibilityLabel="Quick actions"
+                onPress={() => setQuickMenuVisible(true)}
+                activeOpacity={0.85}
+                style={[
+                  props.style,
+                  {
+                    top: -20,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  },
+                ]}
+              >
+                <LinearGradient
+                  colors={['#C1FF72', '#8FD65A']}
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    shadowColor: '#C1FF72',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 34,
+                      fontWeight: '300',
+                      color: '#0F172A',
+                      lineHeight: 34,
+                      textAlign: 'center',
+                      includeFontPadding: false,
+                      marginTop: Platform.OS === 'android' ? -2 : 0,
+                    }}
+                  >
+                    +
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
             ),
+          }}
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              setQuickMenuVisible(true);
+            },
           }}
         />
         
@@ -319,30 +366,31 @@ function AppContent() {
         />
       </Tab.Navigator>
     </NavigationContainer>
+
+    <QuickActionsModal
+      visible={quickMenuVisible}
+      onClose={() => setQuickMenuVisible(false)}
+      onJournal={() => navigationRef.navigate('Profile', { screen: 'TriggerHistory' })}
+      onAchievements={() => navigationRef.navigate('Library', { screen: 'Achievements' })}
+      onAnalytics={() => navigationRef.navigate('Home', { screen: 'Analytics' })}
+      onStreak={() => navigationRef.navigate('Home', { screen: 'EditStreak' })}
+    />
+    </>
   );
 }
 
 // Theme-aware app content component
 function ThemeAwareAppContent() {
-  const { colors, isReady } = useTheme();
-  
-  // Don't render until theme is ready and colors are valid
-  if (!isReady || !colors || typeof colors !== 'object') {
-    return <AppLoadingScreen />;
-  }
-  
-  // Additional validation
-  if (!colors.primaryBackground || !colors.primaryText) {
-    return <AppLoadingScreen />;
-  }
   return <AppContent />;
 }
 
 export default function App() {
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [bootReady, setBootReady] = useState(false);
+  const [showSplashOverlay, setShowSplashOverlay] = useState(true);
 
   useEffect(() => {
+    SplashScreen.setOptions({ duration: 300, fade: true });
+
     async function loadResources() {
       try {
         await Promise.all([
@@ -354,42 +402,51 @@ export default function App() {
             Inter_800ExtraBold,
             Inter_900Black,
           }),
-          preloadCriticalAssets(),
+          preloadSplashAssets(),
           iapService.initialize(),
           Promise.resolve(authService.configure()),
         ]);
+
+        await preloadUserSessionData();
+        await applyPendingUpdateIfAvailable();
       } catch (error) {
-        console.log('Resource loading error:', error);
+        console.error('Boot error:', error);
       } finally {
-        setFontsLoaded(true);
-        setAssetsLoaded(true);
+        setBootReady(true);
       }
     }
 
     loadResources();
   }, []);
 
-  if (!fontsLoaded || !assetsLoaded) {
-    return <AppLoadingScreen />;
-  }
-
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <StreakProvider>
-          <PanicModalProvider>
-            <TipsModalProvider>
-              <MeditationProvider>
-                <ColorProvider>
-                  <AchievementProvider>
-                    <ThemeAwareAppContent />
-                  </AchievementProvider>
-                </ColorProvider>
-              </MeditationProvider>
-            </TipsModalProvider>
-          </PanicModalProvider>
-        </StreakProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <>
+      {bootReady && (
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <StreakProvider>
+              <PanicModalProvider>
+                <TipsModalProvider>
+                  <MeditationProvider>
+                    <ColorProvider>
+                      <AchievementProvider>
+                        <ThemeAwareAppContent />
+                      </AchievementProvider>
+                    </ColorProvider>
+                  </MeditationProvider>
+                </TipsModalProvider>
+              </PanicModalProvider>
+            </StreakProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      )}
+
+      {showSplashOverlay && (
+        <AppLoadingScreen
+          bootReady={bootReady}
+          onFinish={() => setShowSplashOverlay(false)}
+        />
+      )}
+    </>
   );
 }

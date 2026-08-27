@@ -14,10 +14,19 @@ export type AuthSignInResult = {
 
 const GOOGLE_IOS_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim() ?? '';
+const GOOGLE_WEB_CLIENT_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() ?? '';
 
 /** Native auth modules are unavailable in Expo Go — need a dev/production build */
 export function isNativeAuthAvailable(): boolean {
   return Constants.appOwnership !== 'expo';
+}
+
+export function isGoogleSignInConfigured(): boolean {
+  if (Platform.OS === 'android') {
+    return Boolean(GOOGLE_WEB_CLIENT_ID);
+  }
+  return Boolean(GOOGLE_IOS_CLIENT_ID);
 }
 
 class AuthService {
@@ -34,20 +43,31 @@ class AuthService {
 
   getAuthErrorMessage(error: unknown): string {
     if (typeof error === 'object' && error !== null) {
-      const message = (error as { message?: string }).message;
-      if (message) return message;
+      const err = error as { message?: string; code?: string; error_code?: string };
+      const code = err.error_code ?? err.code;
+      if (code === 'email_not_confirmed') {
+        return 'This email address has not been confirmed yet. In Supabase, open Authentication → Users, delete this account, then sign up again (with Confirm email turned off).';
+      }
+      if (err.message) return err.message;
     }
     return 'Authentication failed. Please try again.';
   }
 
   configure(): void {
-    if (!isNativeAuthAvailable() || this.configured || !GOOGLE_IOS_CLIENT_ID) {
+    if (!isNativeAuthAvailable() || this.configured || !isGoogleSignInConfigured()) {
       return;
     }
     // Lazy require so Expo Go doesn't crash on missing native module
     try {
       const { GoogleSignin } = require('@react-native-google-signin/google-signin');
-      GoogleSignin.configure({ iosClientId: GOOGLE_IOS_CLIENT_ID });
+      if (Platform.OS === 'android') {
+        GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
+      } else {
+        GoogleSignin.configure({
+          iosClientId: GOOGLE_IOS_CLIENT_ID,
+          ...(GOOGLE_WEB_CLIENT_ID ? { webClientId: GOOGLE_WEB_CLIENT_ID } : {}),
+        });
+      }
       this.configured = true;
     } catch {
       // Native module not linked — expected in Expo Go
@@ -150,6 +170,23 @@ class AuthService {
     return { user: data.user, appleFullName: credential.fullName };
   }
 
+  async signInWithEmailPassword(email: string, password: string): Promise<AuthSignInResult> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
+      throw new Error('Email and password are required.');
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+    if (error) throw error;
+    if (!data.user) throw new Error('Sign in failed.');
+
+    return { user: data.user };
+  }
+
   async signInWithGoogle(): Promise<AuthSignInResult> {
     if (!isNativeAuthAvailable()) {
       throw new Error('Google Sign In requires a development or production build.');
@@ -157,7 +194,7 @@ class AuthService {
 
     this.configure();
 
-    if (!GOOGLE_IOS_CLIENT_ID) {
+    if (!isGoogleSignInConfigured()) {
       throw new Error('Google Sign In is not configured.');
     }
 

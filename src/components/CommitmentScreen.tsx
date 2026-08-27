@@ -6,7 +6,6 @@ import {
   Dimensions,
   TouchableOpacity,
   Alert,
-  PanResponder,
   BackHandler,
   Modal,
 } from 'react-native';
@@ -155,26 +154,7 @@ const CommitmentScreen: React.FC<CommitmentScreenProps> = ({ onComplete }) => {
 
   const signatureRef = useRef<any>(null);
 
-  // Ultra-aggressive gesture blocking with higher threshold
-  const gestureBlockingPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        // Block ANY movement that could be interpreted as navigation
-        if (Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2) {
-          return true; // Block the gesture
-        }
-        return true;
-      },
-      onPanResponderRelease: () => true,
-      onPanResponderTerminate: () => true,
-      onPanResponderReject: () => true,
-    })
-  ).current;
-
-  // Block back button
+  // Block hardware back only — touch must reach the WebView signature pad unchanged.
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       return true; // Prevent back navigation
@@ -320,42 +300,7 @@ const CommitmentScreen: React.FC<CommitmentScreenProps> = ({ onComplete }) => {
       statusBarTranslucent={true}
       hardwareAccelerated={true}
     >
-      {/* Complete gesture lock - prevents ALL navigation */}
-      <View 
-        style={styles.completeGestureLock}
-        {...gestureBlockingPanResponder.panHandlers}
-        onTouchStart={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        onTouchMove={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        onTouchEnd={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        pointerEvents="box-none"
-        collapsable={false}
-      >
-        <View 
-          style={styles.container}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          onTouchMove={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          onTouchEnd={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          pointerEvents="box-none"
-          collapsable={false}
-        >
+      <View style={styles.container}>
           {/* Dark Starry Background */}
           <LinearGradient
             colors={['#000000', '#050505', '#0A0A0A', '#0F0F0F', '#1A1A2E']}
@@ -376,21 +321,7 @@ const CommitmentScreen: React.FC<CommitmentScreenProps> = ({ onComplete }) => {
            ))}
 
                  {/* Center Content */}
-           <View 
-             style={styles.content}
-             onTouchStart={(e) => {
-               e.stopPropagation();
-               e.preventDefault();
-             }}
-             onTouchMove={(e) => {
-               e.stopPropagation();
-               e.preventDefault();
-             }}
-             onTouchEnd={(e) => {
-               e.stopPropagation();
-               e.preventDefault();
-             }}
-           >
+           <View style={styles.content}>
             {/* Main Headline */}
             <Animated.View style={[styles.headlineContainer, titleStyle]}>
               <Text style={styles.headline}>
@@ -422,21 +353,7 @@ const CommitmentScreen: React.FC<CommitmentScreenProps> = ({ onComplete }) => {
             </Animated.View>
 
                                      {/* Signature Pad */}
-              <Animated.View 
-                style={[styles.signatureContainer, signatureStyle]}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-                onTouchMove={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-                onTouchEnd={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-              >
+              <Animated.View style={[styles.signatureContainer, signatureStyle]}>
               <Text style={styles.signatureLabel}>Sign your commitment:</Text>
               <Text style={styles.signatureInstruction}>
                 {isSigning ? 'Signing...' : 'Draw your signature below'}
@@ -445,22 +362,7 @@ const CommitmentScreen: React.FC<CommitmentScreenProps> = ({ onComplete }) => {
                          <View 
                 style={styles.signaturePad}
               >
-                <View 
-                  style={styles.signaturePadWrapper} 
-                  pointerEvents="box-none"
-                  onTouchStart={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                  onTouchMove={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                  onTouchEnd={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                >
+                <View style={styles.signaturePadWrapper}>
                   <ProfessionalSignaturePad
                     ref={signatureRef}
                     style={[
@@ -520,22 +422,11 @@ const CommitmentScreen: React.FC<CommitmentScreenProps> = ({ onComplete }) => {
             </Animated.View>
           </View>
         </View>
-      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  completeGestureLock: {
-    flex: 1,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 99999,
-    backgroundColor: 'transparent',
-  },
   container: {
     flex: 1,
     backgroundColor: '#0A0A0A',

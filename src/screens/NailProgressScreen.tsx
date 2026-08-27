@@ -10,11 +10,12 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
+import { openCameraCapture, openPhotoLibraryPicker } from '../utils/mediaPermissions';
 import { useThemeGuaranteed } from '../context/ThemeContext';
 import { useStreak } from '../context/StreakContext';
 import nailProgressService, { NailProgressPhoto } from '../services/nailProgressService';
@@ -34,8 +35,9 @@ const NailProgressScreen: React.FC<NailProgressScreenProps> = ({ navigation }) =
   const { colors } = useThemeGuaranteed();
   const { elapsedSeconds } = useStreak();
 
-  const [photos, setPhotos] = useState<NailProgressPhoto[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const bootPhotos = nailProgressService.getMemoryPhotos();
+  const [photos, setPhotos] = useState<NailProgressPhoto[]>(bootPhotos ?? []);
+  const [isLoading, setIsLoading] = useState(bootPhotos === null);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<NailProgressPhoto | null>(null);
   const [showComparison, setShowComparison] = useState(false);
@@ -61,21 +63,13 @@ const NailProgressScreen: React.FC<NailProgressScreenProps> = ({ navigation }) =
 
   const takePhoto = async () => {
     try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Camera permission is required to take photos');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
+      const uri = await openCameraCapture({
+        allowsEditing: Platform.OS === 'ios',
         aspect: [4, 3],
         quality: 0.8,
       });
-
-      if (!result.canceled && result.assets[0]) {
-        await uploadPhoto(result.assets[0].uri);
+      if (uri) {
+        await uploadPhoto(uri);
       }
     } catch (error) {
       console.error('Error taking photo:', error);
@@ -85,21 +79,13 @@ const NailProgressScreen: React.FC<NailProgressScreenProps> = ({ navigation }) =
 
   const pickFromGallery = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Photo library permission is required');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
+      const uri = await openPhotoLibraryPicker({
+        allowsEditing: Platform.OS === 'ios',
         aspect: [4, 3],
         quality: 0.8,
       });
-
-      if (!result.canceled && result.assets[0]) {
-        await uploadPhoto(result.assets[0].uri);
+      if (uri) {
+        await uploadPhoto(uri);
       }
     } catch (error) {
       console.error('Error picking photo:', error);
@@ -135,15 +121,7 @@ const NailProgressScreen: React.FC<NailProgressScreenProps> = ({ navigation }) =
   };
 
   const handleAddPhoto = () => {
-    Alert.alert(
-      'Add Progress Photo',
-      'How would you like to add a photo?',
-      [
-        { text: 'Take Photo', onPress: takePhoto },
-        { text: 'Choose from Gallery', onPress: pickFromGallery },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+    pickFromGallery();
   };
 
   const handlePhotoPress = (photo: NailProgressPhoto) => {
@@ -308,12 +286,22 @@ const NailProgressScreen: React.FC<NailProgressScreenProps> = ({ navigation }) =
 
       {/* Add Photo Button */}
       <View style={[styles.addButtonContainer, { bottom: insets.bottom + 20 }]}>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddPhoto}
-          disabled={isUploading}
-          activeOpacity={0.8}
-        >
+        <View style={styles.addButtonRow}>
+          <TouchableOpacity
+            style={[styles.addButton, styles.addButtonSecondary]}
+            onPress={takePhoto}
+            disabled={isUploading}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="camera-outline" size={22} color={colors.primaryText} />
+            <Text style={[styles.addButtonTextSecondary, { color: colors.primaryText }]}>Camera</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleAddPhoto}
+            disabled={isUploading}
+            activeOpacity={0.8}
+          >
           <LinearGradient
             colors={['#C1FF72', '#9FE855', '#7DD138']}
             style={styles.addButtonGradient}
@@ -324,12 +312,13 @@ const NailProgressScreen: React.FC<NailProgressScreenProps> = ({ navigation }) =
               <ActivityIndicator size="small" color="#000000" />
             ) : (
               <>
-                <Ionicons name="camera" size={24} color="#000000" />
-                <Text style={styles.addButtonText}>Add Photo</Text>
+                <Ionicons name="images" size={24} color="#000000" />
+                <Text style={styles.addButtonText}>Gallery</Text>
               </>
             )}
           </LinearGradient>
         </TouchableOpacity>
+        </View>
       </View>
 
       {/* Photo Detail Modal */}
@@ -575,7 +564,28 @@ const styles = StyleSheet.create({
     left: SPACING.lg,
     right: SPACING.lg,
   },
+  addButtonRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  addButtonSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  addButtonTextSecondary: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
   addButton: {
+    flex: 1.4,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000000',

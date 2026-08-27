@@ -51,7 +51,7 @@ const StarfieldBackground: React.FC<StarfieldBackgroundProps> = ({
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(tick, 40);
+    const interval = setInterval(tick, 60);
     return () => clearInterval(interval);
   }, [tick]);
 

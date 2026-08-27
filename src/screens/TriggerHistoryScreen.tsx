@@ -202,7 +202,7 @@ const TriggerHistoryScreen: React.FC = () => {
             <Ionicons name="chevron-back" size={28} color={colors.primaryText || '#FFFFFF'} />
           </TouchableOpacity>
           <View style={styles.titleContainer}>
-            <Text style={styles.headerTitle}>Trigger History</Text>
+            <Text style={styles.headerTitle}>Journal</Text>
           </View>
           <View style={styles.headerSpacer} />
         </View>
@@ -221,33 +221,30 @@ const TriggerHistoryScreen: React.FC = () => {
             <Ionicons name="trending-up" size={20} color={colors.primaryAccent || '#60A5FA'} />
             <Text style={styles.mostCommonTriggerLabel}>Most Common Trigger</Text>
           </View>
-          <LinearGradient
-            colors={['rgba(147, 51, 234, 0.15)', 'rgba(59, 130, 246, 0.08)', 'rgba(255, 255, 255, 0.02)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.triggerCard}
-          >
-            <View style={styles.mostCommonTrigger}>
-              <Text style={styles.triggerEmoji}>{triggerService.getTriggerEmoji(stats.mostCommonTrigger)}</Text>
-              <Text style={styles.triggerName}>{capitalizeTrigger(stats.mostCommonTrigger)}</Text>
-              <Text style={styles.triggerCount}>{stats.mostCommonTriggerCount}x</Text>
-            </View>
-            
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{stats.totalEpisodes}</Text>
-                <Text style={styles.statLabel}>Total Episodes</Text>
+          <View style={styles.triggerCardWrapper}>
+            <View style={styles.triggerCardInner}>
+              <View style={styles.mostCommonTrigger}>
+                <Text style={styles.triggerEmoji}>{triggerService.getTriggerEmoji(stats.mostCommonTrigger)}</Text>
+                <Text style={styles.triggerName}>{capitalizeTrigger(stats.mostCommonTrigger)}</Text>
+                <Text style={styles.triggerCount}>{stats.mostCommonTriggerCount}x</Text>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{stats.thisWeek}</Text>
-                <Text style={styles.statLabel}>This Week</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>44%</Text>
-                <Text style={styles.statLabel}>{stats.mostCommonTime}</Text>
+              
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{stats.totalEpisodes}</Text>
+                  <Text style={styles.statLabel}>Total Episodes</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>{stats.thisWeek}</Text>
+                  <Text style={styles.statLabel}>This Week</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>44%</Text>
+                  <Text style={styles.statLabel}>{stats.mostCommonTime}</Text>
+                </View>
               </View>
             </View>
-          </LinearGradient>
+          </View>
         </View>
 
         {/* Pattern Detected Section */}
@@ -438,6 +435,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 12,
+  },
+  triggerCardWrapper: {
+    backgroundColor: '#0F172A',
+    borderRadius: SPACING.lg,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: SPACING.md,
+  },
+  triggerCardInner: {
+    overflow: 'hidden',
   },
   mostCommonTrigger: {
     flexDirection: 'row',

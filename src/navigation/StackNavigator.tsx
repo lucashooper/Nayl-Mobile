@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-import { Easing } from 'react-native';
+import { createStackNavigator, CardStyleInterpolators, TransitionSpecs } from '@react-navigation/stack';
+import { Easing, View } from 'react-native';
 import sessionService from '../services/sessionService';
 
 // Import screens
@@ -30,38 +30,60 @@ const screenTransitionConfig = {
     open: {
       animation: 'timing' as const,
       config: {
-        duration: 300,
-        easing: Easing.out(Easing.cubic),
+        duration: 250,
+        easing: Easing.out(Easing.ease),
       },
     },
     close: {
       animation: 'timing' as const,
       config: {
-        duration: 300,
-        easing: Easing.in(Easing.cubic),
+        duration: 250,
+        easing: Easing.in(Easing.ease),
       },
     },
   },
   cardStyle: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#000000',
   },
+  cardStyleInterpolator: ({ current, layouts }: any) => ({
+    cardStyle: {
+      opacity: current.progress,
+    },
+  }),
   gestureEnabled: true,
   gestureDirection: 'horizontal' as const,
   gestureResponseDistance: 50,
 };
 
+const meditationScreenOptions = {
+  gestureEnabled: true,
+  gestureDirection: 'vertical' as const,
+  cardStyle: { backgroundColor: '#000000' },
+  cardStyleInterpolator: CardStyleInterpolators.forVerticalIOS,
+  transitionSpec: {
+    open: TransitionSpecs.TransitionIOSSpec,
+    close: TransitionSpecs.TransitionIOSSpec,
+  },
+};
+
 // Home stack with standardized transitions
 export function HomeStack() {
-  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+  const cachedHasUser = sessionService.getCachedHasUser();
+  const [initialRoute, setInitialRoute] = useState<string | null>(() => {
+    if (cachedHasUser === null) return null;
+    return cachedHasUser ? 'HomeMain' : 'Onboarding';
+  });
 
   useEffect(() => {
+    if (cachedHasUser !== null) return;
+
     sessionService.hasUser().then((hasUser) => {
       setInitialRoute(hasUser ? 'HomeMain' : 'Onboarding');
     });
-  }, []);
+  }, [cachedHasUser]);
 
   if (!initialRoute) {
-    return null;
+    return <View style={{ flex: 1, backgroundColor: '#000000' }} />;
   }
 
   return (
@@ -83,7 +105,7 @@ export function HomeStack() {
       <Stack.Screen name="OnboardingQuestionnaire" component={OnboardingQuestionnaireScreen} />
       <Stack.Screen name="EditStreak" component={EditStreakScreen} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} />
-      <Stack.Screen name="Meditation" component={MeditationScreen} />
+      <Stack.Screen name="Meditation" component={MeditationScreen} options={meditationScreenOptions} />
     </Stack.Navigator>
   );
 }
@@ -110,7 +132,7 @@ export function LibraryStack() {
       <Stack.Screen name="Learning" component={LearningScreen} />
       <Stack.Screen name="Articles" component={ArticlesScreen} />
       <Stack.Screen name="ArticleDetail" component={ArticleDetailScreen} />
-      <Stack.Screen name="Meditation" component={MeditationScreen} />
+      <Stack.Screen name="Meditation" component={MeditationScreen} options={meditationScreenOptions} />
     </Stack.Navigator>
   );
 }

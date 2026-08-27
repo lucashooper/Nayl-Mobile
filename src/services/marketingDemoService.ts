@@ -8,6 +8,12 @@ import profileService from './profileService';
 import { supabase } from '../lib/supabase';
 
 export const MARKETING_DEMO_EMAIL = 'edwardsjonny547@gmail.com';
+export const INVESTOR_DEMO_EMAIL = 'millie@app.com';
+
+const DEMO_ACCOUNT_EMAILS = [
+  MARKETING_DEMO_EMAIL,
+  INVESTOR_DEMO_EMAIL,
+] as const;
 const DEMO_STREAK_DAYS = 14;
 const SEED_FLAG_KEY = '@marketing_demo_seeded_v2';
 
@@ -26,22 +32,30 @@ const DEMO_PHOTO_SCHEDULE = [
 ];
 
 class MarketingDemoService {
-  async isMarketingDemoAccount(): Promise<boolean> {
+  async isDemoAccount(): Promise<boolean> {
     const user = await authService.getCurrentUser();
     const email = user?.email?.toLowerCase().trim();
-    return email === MARKETING_DEMO_EMAIL.toLowerCase();
+    if (!email) return false;
+    return DEMO_ACCOUNT_EMAILS.some((demoEmail) => demoEmail.toLowerCase() === email);
+  }
+
+  /** @deprecated Use isDemoAccount */
+  async isMarketingDemoAccount(): Promise<boolean> {
+    return this.isDemoAccount();
   }
 
   async applyIfNeeded(): Promise<boolean> {
-    if (!(await this.isMarketingDemoAccount())) {
+    if (!(await this.isDemoAccount())) {
       return false;
     }
 
     try {
       await this.ensureStreakData();
+      await this.ensureDemoProfileName();
       await this.seedProgressPhotosIfNeeded();
       await profileService.getProfileData();
       await sessionService.getDashboardData();
+      await sessionService.notifySessionDataReady();
       return true;
     } catch (error) {
       console.warn('Marketing demo seed failed:', error);
@@ -51,7 +65,7 @@ class MarketingDemoService {
 
   /** Ensures the nail progress screen always shows all 4 example photos for demo accounts. */
   async getDisplayPhotos(uploadedPhotos: NailProgressPhoto[]): Promise<NailProgressPhoto[]> {
-    if (!(await this.isMarketingDemoAccount())) {
+    if (!(await this.isDemoAccount())) {
       return uploadedPhotos;
     }
 
@@ -93,6 +107,14 @@ class MarketingDemoService {
         updated_at: createdAt.toISOString(),
       };
     });
+  }
+
+  private async ensureDemoProfileName(): Promise<void> {
+    const user = await authService.getCurrentUser();
+    const email = user?.email?.toLowerCase().trim();
+    if (email === INVESTOR_DEMO_EMAIL.toLowerCase()) {
+      await profileService.updateProfileName('Millie Smith');
+    }
   }
 
   private async ensureStreakData(): Promise<void> {

@@ -9,6 +9,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import BackButton from '../components/BackButton';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import sessionService from '../services/sessionService';
@@ -131,14 +132,6 @@ const ArticlesScreen: React.FC = () => {
     });
 
     setProgressData(newProgress);
-    
-    // Check for achievements based on article completion
-    const totalArticlesRead = completed.size;
-    checkAndUnlockAchievements({
-      currentStreak: 0, // Will be updated from HomeScreen
-      totalArticlesRead,
-      brainRewiringProgress: 0, // Will be updated from HomeScreen
-    });
   };
 
   const handleArticlePress = (articleId: string) => {
@@ -247,7 +240,8 @@ const ArticlesScreen: React.FC = () => {
       paddingRight: SPACING.lg,
     },
     articlesScrollView: {
-      // Add any specific styles for the ScrollView if needed
+      flexGrow: 0,
+      height: 160,
     },
     articleCard: {
       width: 280,
@@ -257,14 +251,6 @@ const ArticlesScreen: React.FC = () => {
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: 'rgba(255, 255, 255, 0.1)',
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 8,
-      },
-      shadowOpacity: 0.3,
-      shadowRadius: 16,
-      elevation: 8,
     },
     articleGradient: {
       flex: 1,
@@ -367,15 +353,13 @@ const ArticlesScreen: React.FC = () => {
 
       {/* Header */}
       <View style={[styles.header, { top: insets.top + 20 }]}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+        <BackButton onPress={handleBackPress} />
         <Text style={styles.headerTitle}>Articles</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} nestedScrollEnabled>
         {/* Nail Biting Psychology Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -387,6 +371,7 @@ const ArticlesScreen: React.FC = () => {
           
           <ScrollView 
             horizontal 
+            nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.articlesRow}
             style={styles.articlesScrollView}
@@ -430,6 +415,7 @@ const ArticlesScreen: React.FC = () => {
           
           <ScrollView 
             horizontal 
+            nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.articlesRow}
             style={styles.articlesScrollView}
@@ -547,6 +533,7 @@ const ArticlesScreen: React.FC = () => {
           
           <ScrollView 
             horizontal 
+            nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.articlesRow}
             style={styles.articlesScrollView}
@@ -664,6 +651,7 @@ const ArticlesScreen: React.FC = () => {
           
           <ScrollView 
             horizontal 
+            nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.articlesRow}
             style={styles.articlesScrollView}

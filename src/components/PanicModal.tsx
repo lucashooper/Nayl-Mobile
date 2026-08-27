@@ -7,6 +7,7 @@ import {
   Dimensions,
   ScrollView,
   Image,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +15,6 @@ import * as Haptics from 'expo-haptics';
 import { typography, body, bodySmall, caption, buttonText } from '../constants/typography';
 import { usePanicModal } from '../context/PanicModalContext';
 import DeterrentPage from './DeterrentPage';
-import * as HapticTypewriter from '../../modules/expo-haptic-typewriter';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,27 +42,58 @@ const SPACING = {
   xxxl: 64,
 };
 
-// Premium typewriter component with native Core Haptics - ultra-smooth performance
-const TypewriterText: React.FC<{ 
-  messages: string[]; 
-  speed?: number; 
+const TYPEWRITER_CHAR_DELAY_MS = 36;
+const HAPTIC_THROTTLE_MS = 48;
+
+const PANIC_TYPEWRITER_MESSAGES = [
+  'STOP\nYOU MADE A\nPROMISE TO\nYOURSELF.',
+  'IS THE SHORT\nRELIEF WORTH\nTHE SHAME?',
+  'YOU CAN DO THIS,\nYOU ARE NOT\nALONE.',
+];
+
+function triggerTypewriterHaptic(
+  char: string,
+  lastHapticTimeRef: React.MutableRefObject<number>,
+): void {
+  if (char === ' ' || char === '\n') return;
+
+  const now = Date.now();
+  if (now - lastHapticTimeRef.current < HAPTIC_THROTTLE_MS) return;
+  lastHapticTimeRef.current = now;
+
+  if (Platform.OS === 'ios') {
+    void Haptics.selectionAsync();
+  } else {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
+}
+
+// Undertale-style typewriter — 1 character per tick, decoupled from network/stream
+const TypewriterText: React.FC<{
+  messages: string[];
+  speed?: number;
   onComplete?: () => void;
   isVisible: boolean;
-}> = ({ 
-  messages, 
-  speed = 4,
+}> = ({
+  messages,
+  speed = TYPEWRITER_CHAR_DELAY_MS,
   onComplete,
-  isVisible
+  isVisible,
 }) => {
   const [displayedText, setDisplayedText] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const currentIndexRef = useRef(0);
+  const messageIndexRef = useRef(0);
   const charIndexRef = useRef(0);
+  const messagesRef = useRef(messages);
+  const onCompleteRef = useRef(onComplete);
+  const lastHapticTimeRef = useRef(0);
+
+  messagesRef.current = messages;
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     if (!isVisible) {
-      // Clean up when not visible
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -71,65 +102,46 @@ const TypewriterText: React.FC<{
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      HapticTypewriter.stopTypewriterHaptics();
       setDisplayedText('');
       return;
     }
 
-    // Reset state
-    currentIndexRef.current = 0;
+    messageIndexRef.current = 0;
     charIndexRef.current = 0;
+    lastHapticTimeRef.current = 0;
     setDisplayedText('');
 
     const typeNextCharacter = () => {
-      const currentMessage = messages[currentIndexRef.current];
+      const target = messagesRef.current[messageIndexRef.current];
+      if (!target) return;
 
-      if (!currentMessage) return;
-
-      if (charIndexRef.current < currentMessage.length) {
-        const char = currentMessage[charIndexRef.current];
-        setDisplayedText(prev => currentMessage.slice(0, charIndexRef.current + 1));
-
-        try {
-          HapticTypewriter.tickCharacter();
-        } catch {
-          // Stronger fallback for Expo Go — Medium for letters, Heavy for line breaks
-          if (char === '\n') {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-          } else {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          }
-        }
-
-        charIndexRef.current++;
-      } else {
-        // Message complete
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        
-        if (currentIndexRef.current < messages.length - 1) {
-          // Quick pause for seamless flow
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          
-          timeoutRef.current = setTimeout(() => {
-            currentIndexRef.current++;
-            charIndexRef.current = 0;
-            setDisplayedText('');
-            
-            // Start next message
-            intervalRef.current = setInterval(typeNextCharacter, speed);
-          }, 600);
-        } else {
-          // All messages complete
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-          onComplete?.();
-        }
+      if (charIndexRef.current < target.length) {
+        const char = target[charIndexRef.current];
+        charIndexRef.current += 1;
+        setDisplayedText(target.slice(0, charIndexRef.current));
+        triggerTypewriterHaptic(char, lastHapticTimeRef);
+        return;
       }
+
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+
+      if (messageIndexRef.current < messagesRef.current.length - 1) {
+        timeoutRef.current = setTimeout(() => {
+          messageIndexRef.current += 1;
+          charIndexRef.current = 0;
+          setDisplayedText('');
+          intervalRef.current = setInterval(typeNextCharacter, speed);
+        }, 450);
+        return;
+      }
+
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onCompleteRef.current?.();
     };
 
-    // Start typing
     intervalRef.current = setInterval(typeNextCharacter, speed);
 
     return () => {
@@ -141,14 +153,16 @@ const TypewriterText: React.FC<{
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      HapticTypewriter.stopTypewriterHaptics();
     };
-  }, [isVisible]); // Only depend on isVisible to prevent infinite loops
+  }, [isVisible, speed]);
 
   return (
     <View style={styles.typewriterContainer}>
       <Text style={styles.warningText}>
         {displayedText}
+        {isVisible && displayedText.length > 0 ? (
+          <Text style={styles.cursor}>|</Text>
+        ) : null}
       </Text>
     </View>
   );
@@ -261,14 +275,8 @@ const PanicModal: React.FC<{ navigation?: any }> = ({ navigation }) => {
         {/* Main Warning Text with Typewriter Effect */}
         <View style={styles.warningContainer}>
           {showTypewriter ? (
-            <TypewriterText 
-              key={`typewriter-${isPanicModalVisible}`}
-              messages={[
-                "STOP\nYOU MADE A\nPROMISE TO\nYOURSELF.",
-                "IS THE SHORT\nRELIEF WORTH\nTHE SHAME?",
-                "YOU CAN DO THIS,\nYOU ARE NOT\nALONE."
-              ]}
-              speed={6}
+            <TypewriterText
+              messages={PANIC_TYPEWRITER_MESSAGES}
               onComplete={handleTypewriterComplete}
               isVisible={showTypewriter}
             />

@@ -15,22 +15,67 @@ export function userStorageKey(base: string, userId: string): string {
 
 class SessionService {
   private currentUserId: string | null = null;
+  private cachedHasUser: boolean | null = null;
+  private memoryDashboard: UserDashboard | null = null;
+  private memorySession: UserSession | null = null;
+
+  getMemoryDashboard(): UserDashboard | null {
+    return this.memoryDashboard;
+  }
+
+  getMemorySession(): UserSession | null {
+    return this.memorySession;
+  }
+
+  /** Streak seconds computed during splash preload — use for frame-1 home render */
+  getBootElapsedSeconds(): number {
+    const session = this.memorySession;
+    if (!session?.start_time) return 0;
+    const startMs = new Date(session.start_time).getTime();
+    if (Number.isNaN(startMs)) return 0;
+    return Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+  }
+
+  getCachedHasUser(): boolean | null {
+    return this.cachedHasUser;
+  }
 
   private emitSessionChange(userId: string | null): void {
     DeviceEventEmitter.emit(USER_SESSION_CHANGED, userId);
   }
 
+  /** Re-broadcast after dashboard/profile/streak data is synced (e.g. post-login preload). */
+  async notifySessionDataReady(): Promise<void> {
+    try {
+      const userId = await this.getCurrentUserId();
+      this.emitSessionChange(userId);
+    } catch {
+      this.emitSessionChange(null);
+    }
+  }
+
   async hasUser(): Promise<boolean> {
-    if (this.currentUserId) return true;
+    if (this.cachedHasUser !== null) {
+      return this.cachedHasUser;
+    }
+    if (this.currentUserId) {
+      this.cachedHasUser = true;
+      return true;
+    }
     const userId = await AsyncStorage.getItem(USER_ID_KEY);
-    if (userId != null) return true;
+    if (userId != null) {
+      this.cachedHasUser = true;
+      return true;
+    }
     const { data } = await supabase.auth.getSession();
-    return data.session?.user != null;
+    this.cachedHasUser = data.session?.user != null;
+    return this.cachedHasUser;
   }
 
   async setUserId(userId: string): Promise<string> {
     await AsyncStorage.setItem(USER_ID_KEY, userId);
     this.currentUserId = userId;
+    this.cachedHasUser = true;
     this.emitSessionChange(userId);
     return userId;
   }
@@ -80,9 +125,12 @@ class SessionService {
     const storedUserId =
       this.currentUserId ?? (await AsyncStorage.getItem(USER_ID_KEY));
 
-    this.currentUserId = null;
+    const keysToRemove = new Set<string>([USER_ID_KEY, SESSION_KEY]);
 
-    const keysToRemove = new Set<string>([USER_ID_KEY, SESSION_KEY, DASHBOARD_CACHE_KEY]);
+    this.currentUserId = null;
+    this.cachedHasUser = false;
+    this.memoryDashboard = null;
+    this.memorySession = null;
 
     // Per-user scoped keys
     if (storedUserId) {
@@ -364,6 +412,7 @@ class SessionService {
       if (error) {
         if (error.code === 'PGRST116') {
           // No session found - this is normal for new users
+          this.memorySession = null;
           return null;
         }
         
@@ -376,9 +425,11 @@ class SessionService {
         });
         
         // Don't throw the error, just return null
+        this.memorySession = null;
         return null;
       }
 
+      this.memorySession = data;
       return data;
     } catch (error) {
       // Enhanced error logging
@@ -807,6 +858,7 @@ class SessionService {
   }
 
   async cacheDashboard(data: UserDashboard): Promise<void> {
+    this.memoryDashboard = data;
     try {
       const key = await this.getUserStorageKey(DASHBOARD_CACHE_KEY);
       await AsyncStorage.setItem(key, JSON.stringify(data));
@@ -821,7 +873,9 @@ class SessionService {
       const key = await this.getUserStorageKey(DASHBOARD_CACHE_KEY);
       const cached = await AsyncStorage.getItem(key);
       if (cached) {
-        return JSON.parse(cached) as UserDashboard;
+        const parsed = JSON.parse(cached) as UserDashboard;
+        this.memoryDashboard = parsed;
+        return parsed;
       }
     } catch (error) {
       console.warn('Failed to read dashboard cache:', error);

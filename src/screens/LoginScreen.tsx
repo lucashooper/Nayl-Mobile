@@ -20,11 +20,18 @@ import {
 
   useWindowDimensions,
 
+  TextInput,
+
+  KeyboardAvoidingView,
+
+  ScrollView,
+
 } from 'react-native';
 
 import { CommonActions, useNavigation } from '@react-navigation/native';
 
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 
@@ -33,6 +40,9 @@ import authService, { AuthSignInResult } from '../services/authService';
 import sessionService from '../services/sessionService';
 
 import iapService from '../services/iapService';
+
+import marketingDemoService from '../services/marketingDemoService';
+import { preloadUserSessionData } from '../utils/assetPreloader';
 
 import hapticService, { HapticType, HapticIntensity } from '../services/hapticService';
 
@@ -44,7 +54,13 @@ const LoginScreen: React.FC = () => {
 
   const { width } = useWindowDimensions();
 
-  const [loading, setLoading] = useState<'apple' | 'google' | null>(null);
+  const [loading, setLoading] = useState<'apple' | 'google' | 'email' | null>(null);
+
+  const [email, setEmail] = useState('');
+
+  const [password, setPassword] = useState('');
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(Platform.OS === 'ios');
 
@@ -76,7 +92,31 @@ const LoginScreen: React.FC = () => {
 
     await iapService.identifyUser(result.user.id);
 
+    if (await marketingDemoService.isDemoAccount()) {
+      await iapService.grantDemoAccess();
+    }
 
+    await preloadUserSessionData();
+
+    if (await marketingDemoService.isDemoAccount()) {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'HomeMain' }],
+        }),
+      );
+      return;
+    }
+
+    if (!iapService.isPurchasesEnabled()) {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'HomeMain' }],
+        }),
+      );
+      return;
+    }
 
     let hasSubscription = false;
 
@@ -240,9 +280,45 @@ const LoginScreen: React.FC = () => {
 
 
 
+  const handleEmailSignIn = async () => {
+
+    if (loading) return;
+
+    setLoading('email');
+
+    hapticService.trigger(HapticType.LIGHT_TAP, HapticIntensity.SUBTLE);
+
+
+
+    try {
+
+      const result = await authService.signInWithEmailPassword(email, password);
+
+      await completeAuthSignIn(result);
+
+    } catch (error) {
+
+      Alert.alert('Sign in failed', authService.getAuthErrorMessage(error));
+
+      console.error('Email sign in error:', error);
+
+    } finally {
+
+      setLoading(null);
+
+    }
+
+  };
+
+
+
   return (
 
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+    >
 
       <StatusBar barStyle="light-content" />
 
@@ -272,15 +348,105 @@ const LoginScreen: React.FC = () => {
 
 
 
-      <View style={[styles.content, { maxWidth: authButtonWidth + 64, alignSelf: 'center', width: '100%' }]}>
-
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { maxWidth: authButtonWidth + 64, width: '100%', alignSelf: 'center' },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         <Text style={styles.title}>Welcome back</Text>
-
         <Text style={styles.subtitle}>
-
           Sign in to restore your progress and Nayl Pro subscription.
-
         </Text>
+
+        <Text style={styles.sectionLabel}>Sign in with email</Text>
+
+        <TextInput
+
+          style={[styles.input, { width: authButtonWidth, alignSelf: 'center' }]}
+
+          placeholder="Email"
+
+          placeholderTextColor="rgba(255,255,255,0.4)"
+
+          autoCapitalize="none"
+
+          autoCorrect={false}
+
+          keyboardType="email-address"
+
+          textContentType="emailAddress"
+
+          value={email}
+
+          onChangeText={setEmail}
+
+          editable={!loading}
+
+        />
+
+
+
+        <View style={[styles.passwordField, { width: authButtonWidth, alignSelf: 'center' }]}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Password"
+            placeholderTextColor="rgba(255,255,255,0.4)"
+            secureTextEntry={!showPassword}
+            textContentType="password"
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={password}
+            onChangeText={setPassword}
+            editable={!loading}
+          />
+          <TouchableOpacity
+            style={styles.passwordToggle}
+            onPress={() => setShowPassword((visible) => !visible)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+          >
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={22}
+              color="rgba(255,255,255,0.55)"
+            />
+          </TouchableOpacity>
+        </View>
+
+
+
+        <TouchableOpacity
+
+          style={[styles.emailButton, { width: authButtonWidth, alignSelf: 'center' }]}
+
+          onPress={handleEmailSignIn}
+
+          activeOpacity={0.85}
+
+          disabled={!!loading || !email.trim() || !password}
+
+        >
+
+          {loading === 'email' ? (
+
+            <ActivityIndicator color="#111" />
+
+          ) : (
+
+            <Text style={styles.emailButtonText}>Sign in with email</Text>
+
+          )}
+
+        </TouchableOpacity>
+
+
+
+        <Text style={styles.dividerText}>or</Text>
 
 
 
@@ -356,9 +522,9 @@ const LoginScreen: React.FC = () => {
 
         </Text>
 
-      </View>
+      </ScrollView>
 
-    </View>
+    </KeyboardAvoidingView>
 
   );
 
@@ -403,6 +569,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
 
     paddingBottom: 80,
+
+  },
+
+  scrollContent: {
+
+    flexGrow: 1,
+
+    paddingHorizontal: 32,
+
+    paddingTop: 112,
+
+    paddingBottom: 48,
+
+  },
+
+  sectionLabel: {
+
+    fontSize: 14,
+
+    fontWeight: '600',
+
+    color: 'rgba(255,255,255,0.55)',
+
+    marginBottom: 12,
+
+    textAlign: 'left',
+
+    alignSelf: 'stretch',
 
   },
 
@@ -465,6 +659,112 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
 
     alignItems: 'center',
+
+  },
+
+  input: {
+
+    height: 52,
+
+    borderRadius: 14,
+
+    borderWidth: 1,
+
+    borderColor: 'rgba(255,255,255,0.15)',
+
+    backgroundColor: 'rgba(255,255,255,0.06)',
+
+    color: '#fff',
+
+    paddingHorizontal: 16,
+
+    fontSize: 16,
+
+    marginBottom: 12,
+
+  },
+
+  passwordField: {
+
+    position: 'relative',
+
+    marginBottom: 16,
+
+  },
+
+  passwordInput: {
+
+    height: 52,
+
+    borderRadius: 14,
+
+    borderWidth: 1,
+
+    borderColor: 'rgba(255,255,255,0.15)',
+
+    backgroundColor: 'rgba(255,255,255,0.06)',
+
+    color: '#fff',
+
+    paddingLeft: 16,
+
+    paddingRight: 48,
+
+    fontSize: 16,
+
+  },
+
+  passwordToggle: {
+
+    position: 'absolute',
+
+    right: 14,
+
+    top: 0,
+
+    bottom: 0,
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+
+  },
+
+  emailButton: {
+
+    height: 56,
+
+    borderRadius: 28,
+
+    backgroundColor: '#3B82F6',
+
+    justifyContent: 'center',
+
+    alignItems: 'center',
+
+    marginBottom: 8,
+
+  },
+
+  emailButtonText: {
+
+    color: '#fff',
+
+    fontSize: 17,
+
+    fontWeight: '600',
+
+  },
+
+  dividerText: {
+
+    color: 'rgba(255,255,255,0.45)',
+
+    textAlign: 'center',
+
+    fontSize: 14,
+
+    marginVertical: 20,
 
   },
 

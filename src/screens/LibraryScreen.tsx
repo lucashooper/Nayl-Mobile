@@ -225,7 +225,7 @@ const LibraryScreen: React.FC = () => {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* Leaderboard Button */}
+          {/* Achievements Button */}
           <TouchableOpacity 
             style={styles.categoryButton} 
             onPress={() => handleButtonPress(() => navigation.navigate('Achievements'))}
@@ -255,7 +255,7 @@ const LibraryScreen: React.FC = () => {
               <View style={styles.bottomShadow} />
               
               <View style={styles.categoryButtonContent}>
-                <Text style={styles.categoryLabel}>Leaderboard</Text>
+                <Text style={styles.categoryLabel}>Achievements</Text>
               </View>
             </LinearGradient>
           </TouchableOpacity>
@@ -392,45 +392,6 @@ const LibraryScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Leaderboard Section */}
-        <View style={styles.leaderboardSection}>
-          <View style={styles.leaderboardHeader}>
-            <Text style={styles.sectionTitle}>Leaderboard</Text>
-            <Text style={styles.leaderboardRank}>You are #207</Text>
-          </View>
-          
-          <View style={styles.leaderboardList}>
-            <View style={styles.leaderboardItem}>
-              <View style={styles.rankContainer}>
-                <Ionicons name="medal" size={24} color="#FFD700" />
-                <Text style={styles.leaderboardName}>Vincent</Text>
-              </View>
-              <View style={[styles.rankBadge, styles.goldBadge]}>
-                <Text style={styles.rankBadgeText}>339 days</Text>
-              </View>
-            </View>
-
-            <View style={styles.leaderboardItem}>
-              <View style={styles.rankContainer}>
-                <Ionicons name="medal" size={24} color="#C0C0C0" />
-                <Text style={styles.leaderboardName}>Oscar</Text>
-              </View>
-              <View style={[styles.rankBadge, styles.silverBadge]}>
-                <Text style={styles.rankBadgeText}>269 days</Text>
-              </View>
-            </View>
-
-            <View style={styles.leaderboardItem}>
-              <View style={styles.rankContainer}>
-                <Ionicons name="medal" size={24} color="#CD7F32" />
-                <Text style={styles.leaderboardName}>Owen</Text>
-              </View>
-              <View style={[styles.rankBadge, styles.bronzeBadge]}>
-                <Text style={styles.rankBadgeText}>256 days</Text>
-              </View>
-            </View>
-          </View>
-        </View>
       </ScrollView>
     </View>
   );

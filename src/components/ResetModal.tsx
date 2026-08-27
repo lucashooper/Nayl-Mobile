@@ -60,7 +60,6 @@ const ResetModal: React.FC<ResetModalProps> = ({
   onReset
 }) => {
   const [selectedTrigger, setSelectedTrigger] = useState<string | null>(null);
-  const [showDropdown, setShowDropdown] = useState(false);
   
   // Star positions for ambient animation (same as main page)
   const [starPositions, setStarPositions] = useState(() => 
@@ -144,7 +143,6 @@ const ResetModal: React.FC<ResetModalProps> = ({
       onReset(selectedTrigger);
       onClose();
       setSelectedTrigger(null);
-      setShowDropdown(false);
     }
   };
   
@@ -153,15 +151,9 @@ const ResetModal: React.FC<ResetModalProps> = ({
     onClose();
   };
   
-  const handleDropdownPress = () => {
-    hapticService.trigger(HapticType.LIGHT_TAP, HapticIntensity.NORMAL);
-    setShowDropdown(!showDropdown);
-  };
-  
   const handleOptionSelect = (triggerId: string) => {
     hapticService.trigger(HapticType.SELECTION, HapticIntensity.NORMAL);
     setSelectedTrigger(triggerId);
-    setShowDropdown(false);
   };
 
   return (
@@ -250,46 +242,33 @@ const ResetModal: React.FC<ResetModalProps> = ({
                 ))}
               </View>
               
-              {/* Trigger selection */}
+              {/* Trigger selection — always visible list (no nested scroll) */}
               <View style={styles.triggerSection}>
                 <Text style={styles.triggerQuestion}>What triggered you to bite your nails?</Text>
-                
-                <TouchableOpacity
-                  style={styles.dropdownButton}
-                  onPress={handleDropdownPress}
-                >
-                  <Text style={styles.dropdownButtonText}>
-                    {selectedTrigger 
-                      ? triggerOptions.find(option => option.id === selectedTrigger)?.label || 'Select an option'
-                      : 'Select an option'
-                    }
-                  </Text>
-                  <Ionicons 
-                    name={showDropdown ? "chevron-up" : "chevron-down"} 
-                    size={20} 
-                    color={COLORS.primaryText} 
-                  />
-                </TouchableOpacity>
 
-                {showDropdown && (
-                  <View style={styles.dropdown}>
-                    <ScrollView style={styles.dropdownScroll}>
-                      {triggerOptions.map((option) => (
-                        <TouchableOpacity
-                          key={option.id}
-                          style={styles.dropdownOption}
-                          onPress={() => handleOptionSelect(option.id)}
-                        >
-                          <Text style={styles.optionEmoji}>{option.emoji}</Text>
-                          <View style={styles.optionContent}>
-                            <Text style={styles.optionLabel}>{option.label}</Text>
-                            <Text style={styles.optionDescription}>{option.description}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
+                {triggerOptions.map((option) => {
+                  const isSelected = selectedTrigger === option.id;
+                  return (
+                    <TouchableOpacity
+                      key={option.id}
+                      style={[
+                        styles.triggerOption,
+                        isSelected && styles.triggerOptionSelected,
+                      ]}
+                      onPress={() => handleOptionSelect(option.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.optionEmoji}>{option.emoji}</Text>
+                      <View style={styles.optionContent}>
+                        <Text style={styles.optionLabel}>{option.label}</Text>
+                        <Text style={styles.optionDescription}>{option.description}</Text>
+                      </View>
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={22} color={COLORS.primaryAccent} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
               
               {/* Reset button */}
@@ -449,41 +428,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: SPACING.sm,
   },
-  dropdownButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    padding: SPACING.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    marginBottom: SPACING.sm,
-  },
-  dropdownButtonText: {
-    ...TYPOGRAPHY.bodyMedium,
-    color: COLORS.primaryText,
-    flex: 1,
-    marginRight: SPACING.sm,
-  },
-  dropdown: {
-    width: '100%',
-    maxHeight: 200,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    marginBottom: SPACING.lg,
-  },
-  dropdownScroll: {
-    padding: SPACING.sm,
-  },
-  dropdownOption: {
+  triggerOption: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    marginBottom: SPACING.sm,
+  },
+  triggerOptionSelected: {
+    backgroundColor: 'rgba(193, 255, 114, 0.12)',
+    borderColor: 'rgba(193, 255, 114, 0.4)',
   },
   optionEmoji: {
     fontSize: 24,

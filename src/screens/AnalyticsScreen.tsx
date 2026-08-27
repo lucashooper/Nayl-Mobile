@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Image,
+  Share,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -170,6 +172,21 @@ const AnalyticsScreen: React.FC = () => {
     },
   ];
 
+  const handleShare = async () => {
+    try {
+      await hapticService.trigger(HapticType.LIGHT_TAP, HapticIntensity.SUBTLE);
+      const streakDays = Math.floor(elapsedSeconds / (24 * 60 * 60));
+      const message = `I'm ${Math.round(recoveryPercentage)}% through my nail-biting recovery on Nayl — ${streakDays} day streak and counting! 💪`;
+      await Share.share(
+        Platform.OS === 'ios'
+          ? { message, title: 'My Nayl Recovery Progress' }
+          : { message },
+      );
+    } catch (error) {
+      console.warn('Share failed:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Consistent background gradient with particle starfield (same as Home) */}
@@ -208,7 +225,7 @@ const AnalyticsScreen: React.FC = () => {
           <View style={styles.titleContainer}>
             <Text style={[styles.screenTitle, { color: colors.primaryText }]}>Analytics</Text>
           </View>
-          <TouchableOpacity style={styles.shareButton}>
+          <TouchableOpacity style={styles.shareButton} onPress={handleShare} accessibilityRole="button" accessibilityLabel="Share recovery progress">
             <Ionicons name="share-outline" size={28} color={colors.primaryText} />
           </TouchableOpacity>
         </View>

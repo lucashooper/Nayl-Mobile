@@ -5,17 +5,26 @@
     "scheme": "nayl",
     "owner": "crupid2s-organization",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/Nayl-cooler-logo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "image": "./assets/splash.png",
+      "backgroundColor": "#000000",
+      "resizeMode": "contain"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
+    "updates": {
+      "url": "https://u.expo.dev/e3758d2e-40d2-4637-aa97-5f4d3310a4f2",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.nayl.mobile",
@@ -30,20 +39,41 @@
       "usesAppleSignIn": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
         "backgroundColor": "#000000"
       },
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/Nayl-cooler-logo.png",
+        "backgroundColor": "#090A0F"
+      },
+      "backgroundColor": "#090A0F",
+      "icon": "./assets/Nayl-cooler-logo.png",
       "package": "app.nayl.mobile",
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "backgroundColor": "#000000",
+          "resizeMode": "contain"
+        }
+      ],
       "expo-font",
+      "expo-updates",
       "expo-video",
       "expo-apple-authentication",
       [
@@ -74,7 +104,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "7fcf64d6-2d47-49fe-9026-26220df8b813"
+        "projectId": "e3758d2e-40d2-4637-aa97-5f4d3310a4f2"
       }
     }
   }

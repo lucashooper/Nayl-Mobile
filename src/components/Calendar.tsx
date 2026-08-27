@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,16 @@ interface CalendarProps {
   onDateSelect: (date: Date) => void;
   maxDate?: Date;
   minDate?: Date;
+  rangeStartDate?: Date;
+  rangeEndDate?: Date;
+}
+
+function stripTime(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return stripTime(a) === stripTime(b);
 }
 
 const Calendar: React.FC<CalendarProps> = ({
@@ -33,128 +43,139 @@ const Calendar: React.FC<CalendarProps> = ({
   onDateSelect,
   maxDate = new Date(),
   minDate = new Date(2020, 0, 1),
+  rangeStartDate,
+  rangeEndDate,
 }) => {
-  // Always initialize with current year and month (2025)
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const [currentYear, setCurrentYear] = useState(() => {
-    const now = new Date();
-    return now.getFullYear();
-  });
+  const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
 
-  // Get the first day of the month and number of days
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
 
   const getFirstDayOfMonth = (date: Date) => {
     const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-    // Convert Sunday (0) to 6, Monday (1) to 0, etc.
     return day === 0 ? 6 : day - 1;
   };
 
-  // Generate calendar days
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentMonth);
     const firstDayOfMonth = getFirstDayOfMonth(currentMonth);
-    const days = [];
+    const days: (Date | null)[] = [];
 
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(null);
     }
 
-    // Add days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-      days.push(date);
+      days.push(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day));
     }
 
     return days;
   };
 
-  // Navigate to previous month
   const goToPreviousMonth = () => {
     const newMonth = new Date(currentMonth);
     newMonth.setMonth(newMonth.getMonth() - 1);
-    
-    // Check if the new month is within the allowed range
+
     if (newMonth >= minDate) {
       setCurrentMonth(newMonth);
       setCurrentYear(newMonth.getFullYear());
     }
   };
 
-  // Navigate to next month
   const goToNextMonth = () => {
     const newMonth = new Date(currentMonth);
     newMonth.setMonth(newMonth.getMonth() + 1);
-    
-    // Check if the new month is within the allowed range
+
     if (newMonth <= maxDate) {
       setCurrentMonth(newMonth);
       setCurrentYear(newMonth.getFullYear());
     }
   };
 
-  // Check if a date is selectable
-  const isDateSelectable = (date: Date) => {
-    return date >= minDate && date <= maxDate;
-  };
+  const isDateSelectable = (date: Date) => date >= minDate && date <= maxDate;
 
-  // Check if a date is selected
-  const isDateSelected = (date: Date) => {
-    return (
-      date.getDate() === selectedDate.getDate() &&
-      date.getMonth() === selectedDate.getMonth() &&
-      date.getFullYear() === selectedDate.getFullYear()
-    );
-  };
+  const isDateSelected = (date: Date) => isSameDay(date, selectedDate);
 
-  // Check if a date is today
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    );
+  const isToday = (date: Date) => isSameDay(date, new Date());
+
+  const isRangeStart = (date: Date) =>
+    rangeStartDate ? isSameDay(date, rangeStartDate) : false;
+
+  const isRangeEnd = (date: Date) =>
+    rangeEndDate ? isSameDay(date, rangeEndDate) : false;
+
+  const isInStreakRange = (date: Date) => {
+    if (!rangeStartDate || !rangeEndDate) return false;
+    const value = stripTime(date);
+    const start = stripTime(rangeStartDate);
+    const end = stripTime(rangeEndDate);
+    return value >= start && value <= end;
   };
 
   const calendarDays = generateCalendarDays();
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'July', 'August', 'September', 'October', 'November', 'December',
   ];
 
   return (
     <View style={styles.container}>
-      {/* Month Navigation */}
       <View style={styles.monthNavigation}>
         <Text style={styles.monthYearText}>
           {monthNames[currentMonth.getMonth()]} {currentYear}
         </Text>
         <View style={styles.navigationButtons}>
           <TouchableOpacity
-            style={[styles.navButton, !isDateSelectable(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)) && styles.navButtonDisabled]}
+            style={[
+              styles.navButton,
+              !isDateSelectable(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)) &&
+                styles.navButtonDisabled,
+            ]}
             onPress={goToPreviousMonth}
-            disabled={!isDateSelectable(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
+            disabled={
+              !isDateSelectable(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
+            }
           >
             <Ionicons name="chevron-back" size={16} color={COLORS.primaryText} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.navButton, !isDateSelectable(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)) && styles.navButtonDisabled]}
+            style={[
+              styles.navButton,
+              !isDateSelectable(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)) &&
+                styles.navButtonDisabled,
+            ]}
             onPress={goToNextMonth}
-            disabled={!isDateSelectable(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+            disabled={
+              !isDateSelectable(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
+            }
           >
             <Ionicons name="chevron-forward" size={16} color={COLORS.primaryText} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Day Headers */}
+      {rangeStartDate && rangeEndDate ? (
+        <View style={styles.legendRow}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, styles.legendStart]} />
+            <Text style={styles.legendText}>Start</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, styles.legendRange]} />
+            <Text style={styles.legendText}>Streak</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, styles.legendEnd]} />
+            <Text style={styles.legendText}>Today</Text>
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.dayHeaders}>
         {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) => (
           <Text key={day} style={styles.dayHeaderText}>
@@ -163,7 +184,6 @@ const Calendar: React.FC<CalendarProps> = ({
         ))}
       </View>
 
-      {/* Calendar Grid */}
       <View style={styles.calendarGrid}>
         {calendarDays.map((date, index) => (
           <View key={index} style={styles.dayCell}>
@@ -171,8 +191,11 @@ const Calendar: React.FC<CalendarProps> = ({
               <TouchableOpacity
                 style={[
                   styles.dayButton,
-                  isDateSelected(date) && styles.selectedDayButton,
-                  isToday(date) && !isDateSelected(date) && styles.todayButton,
+                  isInStreakRange(date) && !isRangeStart(date) && !isRangeEnd(date) && styles.inRangeDayButton,
+                  isRangeStart(date) && styles.rangeStartButton,
+                  isRangeEnd(date) && styles.rangeEndButton,
+                  isDateSelected(date) && !isRangeStart(date) && styles.selectedDayButton,
+                  isToday(date) && !isDateSelected(date) && !isRangeEnd(date) && styles.todayButton,
                   !isDateSelectable(date) && styles.disabledDayButton,
                 ]}
                 onPress={() => isDateSelectable(date) && onDateSelect(date)}
@@ -181,8 +204,11 @@ const Calendar: React.FC<CalendarProps> = ({
                 <Text
                   style={[
                     styles.dayText,
+                    isInStreakRange(date) && styles.inRangeDayText,
+                    isRangeStart(date) && styles.rangeStartText,
+                    isRangeEnd(date) && styles.rangeEndText,
                     isDateSelected(date) && styles.selectedDayText,
-                    isToday(date) && !isDateSelected(date) && styles.todayText,
+                    isToday(date) && !isDateSelected(date) && !isRangeEnd(date) && styles.todayText,
                     !isDateSelectable(date) && styles.disabledDayText,
                   ]}
                 >
@@ -232,6 +258,35 @@ const styles = StyleSheet.create({
   navButtonDisabled: {
     opacity: 0.3,
   },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: SPACING.lg,
+    marginBottom: SPACING.md,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendStart: {
+    backgroundColor: '#C1FF72',
+  },
+  legendRange: {
+    backgroundColor: 'rgba(193, 255, 114, 0.35)',
+  },
+  legendEnd: {
+    backgroundColor: '#FFFFFF',
+  },
+  legendText: {
+    ...typography.caption,
+    color: COLORS.secondaryText,
+  },
   dayHeaders: {
     flexDirection: 'row',
     marginBottom: SPACING.md,
@@ -264,10 +319,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
-  selectedDayButton: {
-    backgroundColor: '#1A1A2E', // Premium dark color instead of green
+  inRangeDayButton: {
+    backgroundColor: 'rgba(193, 255, 114, 0.18)',
+    borderRadius: 8,
+    width: 34,
+    height: 32,
+  },
+  rangeStartButton: {
+    backgroundColor: 'rgba(193, 255, 114, 0.25)',
     borderWidth: 2,
-    borderColor: '#FFFFFF', // White border for premium feel
+    borderColor: '#C1FF72',
+    ...SHADOWS.card,
+  },
+  rangeEndButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    ...SHADOWS.card,
+  },
+  selectedDayButton: {
+    backgroundColor: '#1A1A2E',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     ...SHADOWS.card,
   },
   todayButton: {
@@ -283,8 +356,19 @@ const styles = StyleSheet.create({
     color: COLORS.primaryText,
     fontWeight: '500',
   },
+  inRangeDayText: {
+    color: '#D9F99D',
+  },
+  rangeStartText: {
+    color: '#C1FF72',
+    fontWeight: '800',
+  },
+  rangeEndText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
   selectedDayText: {
-    color: '#FFFFFF', // White text for contrast with dark background
+    color: '#FFFFFF',
     fontWeight: '700',
   },
   todayText: {

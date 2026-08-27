@@ -21,10 +21,7 @@ import { TYPOGRAPHY } from '../constants/theme';
 import { typography } from '../constants/typography';
 import hapticService, { HapticType, HapticIntensity } from '../services/hapticService';
 import AchievementOverlay from '../components/AchievementOverlay';
-import AchievementSkeleton from '../components/AchievementSkeleton';
 import ScreenSkeleton from '../components/ScreenSkeleton';
-import achievementService from '../services/achievementService';
-import { DatabaseAchievement } from '../services/achievementService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -404,27 +401,32 @@ export default function AchievementsScreen() {
   const colors = themeResult?.colors;
   const insets = useSafeAreaInsets();
   
-  // Loading state to prevent layout shifts
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDataReady, setIsDataReady] = useState(false);
-  
-  // NEW: Database achievements state for performance optimization
-  const [databaseAchievements, setDatabaseAchievements] = useState<DatabaseAchievement[]>([]);
-  
-  // Get achievements from context (for overlay functionality)
+  // Achievements from shared context (single source of truth)
   const {
+    achievements: contextAchievements,
     currentOverlay,
     isOverlayVisible,
     hideAchievementOverlay,
   } = useAchievements();
-  
-  // Local state for unlocked achievements (fallback)
-  const [unlockedAchievements, setUnlockedAchievements] = useState(new Set([0, 1]));
+
+  const achievements = contextAchievements.map((achievement) => ({
+    id: achievement.id,
+    title: achievement.title,
+    description: achievement.description,
+    progress: achievement.progress,
+    maxProgress: achievement.maxProgress,
+    gradientColors: achievement.gradientColors,
+    icon: achievement.icon,
+    iconSource: achievement.iconSource,
+    isUnlocked: achievement.isUnlocked,
+  }));
+
+  const unlockedCount = achievements.filter((a) => a.isUnlocked).length;
 
   
   // Star positions for randomized animation
   const [starPositions, setStarPositions] = useState(() => 
-    Array.from({ length: 100 }, () => ({
+    Array.from({ length: 40 }, () => ({
       x: Math.random() * width * 2,
       y: Math.random() * height,
       opacity: Math.random() * 0.9 + 0.15, // Enhanced opacity range: 0.15 to 1.05 for more variation
@@ -464,171 +466,25 @@ export default function AchievementsScreen() {
   // Starfield animation
   useEffect(() => {
     // Randomized starfield animation - optimized for performance
-    const starfieldInterval = setInterval(updateStarPositions, 50); // Reduced from 20ms to 50ms for better performance
+    const starfieldInterval = setInterval(updateStarPositions, 80);
 
     return () => {
       clearInterval(starfieldInterval);
     };
   }, [updateStarPositions]);
 
-  // NEW: Load achievements using the optimized AchievementService
-  useEffect(() => {
-    const loadAchievements = async () => {
-      try {
-        // LIGHTNING FAST: Show data instantly from memory
-        const localAchievements = await achievementService.getLocalAchievements();
-        setDatabaseAchievements(localAchievements);
-        setIsDataReady(true);
-        setIsLoading(false);
-        
-        // Background sync (non-blocking, user doesn't wait)
-        setTimeout(async () => {
-          try {
-            await achievementService.initializeDefaultAchievements();
-            const dbAchievements = await achievementService.getUserAchievements();
-            setDatabaseAchievements(dbAchievements);
-          } catch (dbError) {
-            console.warn('Background sync failed, using local data:', dbError);
-          }
-        }, 50); // Minimal delay to not block UI
-        
-      } catch (error) {
-        console.error('Error loading achievements:', error);
-        setIsDataReady(true);
-        setIsLoading(false);
-      }
-    };
-
-    loadAchievements();
-  }, []);
-
-  // NEW: Map database achievements to the expected format
-  const mapDatabaseAchievementToDisplay = (dbAchievement: DatabaseAchievement) => {
-    // Define gradient colors based on rarity
-    const rarityColors = {
-      common: ['#6B7280', '#9CA3AF', '#D1D5DB'] as const,
-      rare: ['#3B82F6', '#60A5FA', '#93C5FD'] as const,
-      epic: ['#8B5CF6', '#A78BFA', '#C4B5FD'] as const,
-      legendary: ['#F59E0B', '#FBBF24', '#FCD34D'] as const,
-    };
-
-    // Static mapping for achievement icons to avoid dynamic require
-    const iconMapping: Record<string, any> = {
-      'sprout': require('../../assets/bigger-achievement-icons/Sprout-280px.png'),
-      'the-oak': require('../../assets/bigger-achievement-icons/Da-Oak-280px.png'),
-      'conqueror': require('../../assets/bigger-achievement-icons/Landmark-280px.png'),
-      'sun-kissed': require('../../assets/bigger-achievement-icons/Sun-280px.png'),
-      'deeply-rooted': require('../../assets/bigger-achievement-icons/Deeply-Rooted-280px.png'),
-      'blossoming': require('../../assets/bigger-achievement-icons/Blossom-280px.png'),
-    };
-
-    return {
-      id: dbAchievement.id,
-      title: dbAchievement.title,
-      description: dbAchievement.description,
-      progress: dbAchievement.progress,
-      maxProgress: dbAchievement.max_progress,
-      gradientColors: rarityColors[dbAchievement.rarity],
-      icon: 'custom' as const,
-      iconSource: iconMapping[dbAchievement.achievement_id] || require('../../assets/bigger-achievement-icons/Sprout-280px.png'), // Fallback to sprout icon
-      isUnlocked: dbAchievement.is_unlocked,
-    };
-  };
-
-  // Enhanced safety check for theme colors
-  if (!colors || 
-      typeof colors !== 'object' || 
-      !colors.primaryBackground || 
-      !colors.primaryText ||
-      !colors.backgroundGradient) {
-    console.warn('⚠️ AchievementsScreen: Theme colors not ready, showing skeleton');
+  if (
+    !colors ||
+    typeof colors !== 'object' ||
+    !colors.primaryBackground ||
+    !colors.primaryText ||
+    !colors.backgroundGradient
+  ) {
     return <ScreenSkeleton showHeader={true} showContent={true} />;
   }
 
   // Create styles with validated colors
   const styles = createStyles(colors);
-
-  // LIGHTNING FAST: Show data immediately, no skeleton loading
-  if (!isDataReady) {
-    return (
-      <View style={styles.container}>
-        {/* Consistent background gradient */}
-        <LinearGradient
-          colors={colors.backgroundGradient}
-          style={styles.backgroundGradient}
-        />
-        
-        {/* Subtle starfield effect */}
-        <View style={styles.starfield}>
-          {starPositions.map((star, index) => (
-            <View
-              key={index}
-              style={[
-                styles.star,
-                {
-                  left: star.x,
-                  top: star.y,
-                  opacity: star.opacity,
-                  width: star.size,
-                  height: star.size,
-                  borderRadius: star.size / 2,
-                }
-              ]}
-            />
-          ))}
-        </View>
-        
-        {/* Content */}
-        <ScrollView 
-          style={styles.content} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.contentContainer}
-        >
-          <View style={styles.achievementsGrid}>
-            {/* Empty state - will be replaced instantly */}
-          </View>
-        </ScrollView>
-      </View>
-    );
-  }
-
-  // Use mapped achievements for display
-  const achievements = databaseAchievements.map(mapDatabaseAchievementToDisplay);
-  
-  const unlockedCount = databaseAchievements.filter(a => a.is_unlocked).length;
-
-  const unlockAchievement = async (index: number) => {
-    if (!unlockedAchievements.has(index)) {
-      setUnlockedAchievements(prev => new Set([...prev, index]));
-      
-      // Enhanced haptic feedback sequence for achievement unlock
-      try {
-        // Primary achievement unlock haptic
-        await hapticService.trigger(HapticType.ACHIEVEMENT, HapticIntensity.PROMINENT);
-        
-        // Secondary success haptic after a short delay
-        setTimeout(async () => {
-          await hapticService.trigger(HapticType.SUCCESS, HapticIntensity.NORMAL);
-        }, 200);
-        
-        // Final subtle confirmation haptic
-        setTimeout(async () => {
-          await hapticService.trigger(HapticType.SELECTION, HapticIntensity.SUBTLE);
-        }, 400);
-        
-      } catch (error) {
-        console.warn('Haptic feedback error:', error);
-        // Fallback to basic haptics with multiple patterns
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setTimeout(() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        }, 150);
-        setTimeout(() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }, 300);
-      }
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -696,7 +552,7 @@ export default function AchievementsScreen() {
         <View style={styles.achievementsGrid}>
           {achievements.map((achievement, index) => (
             <AchievementBadge
-              key={index}
+              key={achievement.id}
               {...achievement}
               index={index}
             />
