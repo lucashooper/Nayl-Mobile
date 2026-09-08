@@ -9,6 +9,8 @@ import { supabase } from '../lib/supabase';
 
 export const MARKETING_DEMO_EMAIL = 'edwardsjonny547@gmail.com';
 export const INVESTOR_DEMO_EMAIL = 'millie@app.com';
+/** Use for App Store Connect → App Review Information */
+export const APP_REVIEW_DEMO_EMAIL = INVESTOR_DEMO_EMAIL;
 
 const DEMO_ACCOUNT_EMAILS = [
   MARKETING_DEMO_EMAIL,

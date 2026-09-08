@@ -26,7 +26,7 @@ export function isGoogleSignInConfigured(): boolean {
   if (Platform.OS === 'android') {
     return Boolean(GOOGLE_WEB_CLIENT_ID);
   }
-  return Boolean(GOOGLE_IOS_CLIENT_ID);
+  return Boolean(GOOGLE_IOS_CLIENT_ID && GOOGLE_WEB_CLIENT_ID);
 }
 
 class AuthService {
@@ -140,34 +140,50 @@ class AuthService {
       throw new Error('Sign in with Apple is not available on this device.');
     }
 
+    return this.signInWithAppleCredential();
+  }
+
+  /** iPad can fail the first quick-auth attempt; one scoped retry helps App Review devices. */
+  private async signInWithAppleCredential(allowRetry = true): Promise<AuthSignInResult> {
     const rawNonce = this.generateNonce();
     const hashedNonce = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
       rawNonce,
     );
 
-    const credential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-      nonce: hashedNonce,
-    });
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
 
-    if (!credential.identityToken) {
-      throw new Error('Apple Sign In did not return an identity token.');
+      if (!credential.identityToken) {
+        throw new Error('Apple Sign In did not return an identity token.');
+      }
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+        nonce: rawNonce,
+      });
+
+      if (error) throw error;
+      if (!data.user) throw new Error('Sign in with Apple failed.');
+
+      return { user: data.user, appleFullName: credential.fullName };
+    } catch (error) {
+      if (
+        allowRetry &&
+        this.isAppleSignInCancelled(error) &&
+        Platform.isPad
+      ) {
+        return this.signInWithAppleCredential(false);
+      }
+      throw error;
     }
-
-    const { data, error } = await supabase.auth.signInWithIdToken({
-      provider: 'apple',
-      token: credential.identityToken,
-      nonce: rawNonce,
-    });
-
-    if (error) throw error;
-    if (!data.user) throw new Error('Sign in with Apple failed.');
-
-    return { user: data.user, appleFullName: credential.fullName };
   }
 
   async signInWithEmailPassword(email: string, password: string): Promise<AuthSignInResult> {
@@ -195,17 +211,39 @@ class AuthService {
     this.configure();
 
     if (!isGoogleSignInConfigured()) {
-      throw new Error('Google Sign In is not configured.');
+      throw new Error(
+        'Google Sign In is not configured. Set EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID and EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID.',
+      );
     }
 
-    const { GoogleSignin, statusCodes } = require('@react-native-google-signin/google-signin');
+    const {
+      GoogleSignin,
+      isSuccessResponse,
+    } = require('@react-native-google-signin/google-signin');
 
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    if (Platform.OS === 'android') {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    }
+
     const response = await GoogleSignin.signIn();
-    const idToken = response.data?.idToken;
+    if (!isSuccessResponse(response)) {
+      throw Object.assign(new Error('Google Sign In was cancelled.'), { code: 'SIGN_IN_CANCELLED' });
+    }
+
+    let idToken = response.data.idToken;
+    if (!idToken) {
+      try {
+        const tokens = await GoogleSignin.getTokens();
+        idToken = tokens.idToken;
+      } catch {
+        // Fall through to explicit error below.
+      }
+    }
 
     if (!idToken) {
-      throw new Error('Google Sign In did not return an identity token.');
+      throw new Error(
+        'Google Sign In did not return an identity token. Check EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your EAS production environment.',
+      );
     }
 
     const { data, error } = await supabase.auth.signInWithIdToken({

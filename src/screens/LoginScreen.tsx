@@ -35,7 +35,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 
-import authService, { AuthSignInResult } from '../services/authService';
+import authService, { AuthSignInResult, isGoogleSignInConfigured } from '../services/authService';
 
 import sessionService from '../services/sessionService';
 
@@ -81,6 +81,8 @@ const LoginScreen: React.FC = () => {
 
 
   const authButtonWidth = Math.min(width - 64, 440);
+
+  const googleSignInConfigured = isGoogleSignInConfigured();
 
 
 
@@ -446,83 +448,49 @@ const LoginScreen: React.FC = () => {
 
 
 
-        <Text style={styles.dividerText}>or</Text>
+        <Text style={styles.dividerText}>or continue with</Text>
+      </ScrollView>
 
-
-
+      <View style={[styles.socialSection, { maxWidth: authButtonWidth + 64, alignSelf: 'center', width: '100%' }]}>
         {Platform.OS === 'ios' && appleAuthAvailable && (
-
           <AppleAuthentication.AppleAuthenticationButton
-
             buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-
             buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-
             cornerRadius={28}
-
             style={[styles.appleButton, { width: authButtonWidth, alignSelf: 'center' }]}
-
             onPress={handleAppleSignIn}
-
           />
-
         )}
-
-
 
         {Platform.OS === 'ios' && !appleAuthAvailable && (
-
           <Text style={styles.unavailableText}>
-
             Sign in with Apple is unavailable on this device.
-
           </Text>
-
         )}
 
-
-
-        <TouchableOpacity
-
-          style={[styles.googleButton, { width: authButtonWidth, alignSelf: 'center' }]}
-
-          onPress={handleGoogleSignIn}
-
-          activeOpacity={0.85}
-
-          disabled={!!loading}
-
-        >
-
-          {loading === 'google' ? (
-
-            <ActivityIndicator color="#111" />
-
-          ) : (
-
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-
-          )}
-
-        </TouchableOpacity>
-
-
+        {googleSignInConfigured ? (
+          <TouchableOpacity
+            style={[styles.googleButton, { width: authButtonWidth, alignSelf: 'center' }]}
+            onPress={handleGoogleSignIn}
+            activeOpacity={0.85}
+            disabled={!!loading}
+          >
+            {loading === 'google' ? (
+              <ActivityIndicator color="#111" />
+            ) : (
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            )}
+          </TouchableOpacity>
+        ) : null}
 
         {loading === 'apple' && (
-
           <ActivityIndicator color="#fff" style={styles.loader} />
-
         )}
 
-
-
         <Text style={styles.footer}>
-
           New to Nayl? Go back and tap Begin to create your plan.
-
         </Text>
-
-      </ScrollView>
+      </View>
 
     </KeyboardAvoidingView>
 
@@ -579,6 +547,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
 
     paddingTop: 112,
+
+    paddingBottom: 16,
+
+  },
+
+  socialSection: {
+
+    paddingHorizontal: 32,
 
     paddingBottom: 48,
 
