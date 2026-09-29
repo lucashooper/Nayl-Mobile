@@ -3,22 +3,17 @@
     "name": "Nayl",
     "slug": "nayl-app",
     "scheme": "nayl",
-    "owner": "lucashoopers-team",
+    "owner": "crupid3s-team",
     "version": "1.0.0",
     "runtimeVersion": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/Nayl-cooler-logo.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "backgroundColor": "#000000",
-      "resizeMode": "contain"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "updates": {
-      "url": "https://u.expo.dev/e3758d2e-40d2-4637-aa97-5f4d3310a4f2",
+      "url": "https://u.expo.dev/25b76779-54fb-4670-83ac-e2f6ada8261d",
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
@@ -26,7 +21,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.nayl.mobile",
-      "buildNumber": "4",
+      "buildNumber": "23",
       "infoPlist": {
         "NSCameraUsageDescription": "Nayl uses your camera so you can take photos to track your nail progress over time.",
         "NSPhotoLibraryUsageDescription": "Nayl accesses your photo library so you can choose photos to track your nail progress and set a profile picture.",
@@ -37,11 +32,6 @@
       "usesAppleSignIn": true
     },
     "android": {
-      "splash": {
-        "image": "./assets/splash.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#000000"
-      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/Nayl-cooler-logo.png",
         "backgroundColor": "#090A0F"
@@ -49,14 +39,17 @@
       "backgroundColor": "#090A0F",
       "icon": "./assets/Nayl-cooler-logo.png",
       "package": "app.nayl.mobile",
-      "versionCode": 4,
+      "versionCode": 11,
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "web": {
@@ -66,9 +59,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash.png",
-          "backgroundColor": "#000000",
-          "resizeMode": "contain"
+          "backgroundColor": "#000000"
         }
       ],
       "expo-font",
@@ -92,18 +83,31 @@
         "expo-build-properties",
         {
           "ios": {
+            "deploymentTarget": "16.4",
             "extraPods": [
-              { "name": "GoogleUtilities/Environment", "modular_headers": true },
-              { "name": "GoogleUtilities/UserDefaults", "modular_headers": true },
-              { "name": "RecaptchaInterop", "modular_headers": true }
+              {
+                "name": "GoogleUtilities/Environment",
+                "modular_headers": true
+              },
+              {
+                "name": "GoogleUtilities/UserDefaults",
+                "modular_headers": true
+              },
+              {
+                "name": "RecaptchaInterop",
+                "modular_headers": true
+              }
             ]
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-status-bar",
+      "expo-audio"
     ],
     "extra": {
       "eas": {
-        "projectId": "e3758d2e-40d2-4637-aa97-5f4d3310a4f2"
+        "projectId": "25b76779-54fb-4670-83ac-e2f6ada8261d"
       }
     }
   }

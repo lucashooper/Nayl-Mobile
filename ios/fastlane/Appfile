@@ -1,0 +1,6 @@
+app_identifier("app.nayl.mobile")
+apple_id("lucashooper100@outlook.com")
+team_id("HMLV274G9F")
+
+# App Store Connect app ID (for reference; upload uses API key auth)
+# itunes_connect_id("6792496781")

@@ -21,6 +21,7 @@ import LoginScreen from '../screens/LoginScreen';
 import EditStreakScreen from '../screens/EditStreakScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import NailProgressScreen from '../screens/NailProgressScreen';
+import NaylProPaywallScreen from '../screens/NaylProPaywallScreen';
 
 const Stack = createStackNavigator();
 
@@ -105,6 +106,11 @@ export function HomeStack() {
       <Stack.Screen name="OnboardingQuestionnaire" component={OnboardingQuestionnaireScreen} />
       <Stack.Screen name="EditStreak" component={EditStreakScreen} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+      <Stack.Screen
+        name="NaylProPaywall"
+        component={NaylProPaywallScreen}
+        options={{ gestureEnabled: true }}
+      />
       <Stack.Screen name="Meditation" component={MeditationScreen} options={meditationScreenOptions} />
     </Stack.Navigator>
   );
@@ -115,6 +121,11 @@ export function ProfileStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, ...screenTransitionConfig }}>
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+      <Stack.Screen
+        name="NaylProPaywall"
+        component={NaylProPaywallScreen}
+        options={{ gestureEnabled: true }}
+      />
       <Stack.Screen name="Reasons" component={ReasonsScreen} />
       <Stack.Screen name="TriggerHistory" component={TriggerHistoryScreen} />
       <Stack.Screen name="NailProgress" component={NailProgressScreen} />

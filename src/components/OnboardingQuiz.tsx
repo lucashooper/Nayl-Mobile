@@ -36,11 +36,17 @@ interface OnboardingQuizProps {
   onComplete: (userName: string) => void;
   onLogin: () => void;
   paywallOnly?: boolean;
+  forceDisplay?: boolean;
 }
 
 const QUIZ_FIRST_PAGE_INDEX = 3;
 
-const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete, onLogin, paywallOnly = false }) => {
+const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
+  onComplete,
+  onLogin,
+  paywallOnly = false,
+  forceDisplay = false,
+}) => {
   const [currentPage, setCurrentPage] = useState(paywallOnly ? PAYWALL_PAGE_INDEX : 0);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string | string[]>>({});
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -1105,6 +1111,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({ onComplete, onLogin, pa
         <View key="naylProUpgrade" style={styles.page}>
           {currentPage === 18 ? (
             <NaylProUpgradeScreen
+              forceDisplay={forceDisplay}
               onUnlockPro={handleUnlockPro}
             />
           ) : (

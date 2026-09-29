@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,11 @@ import {
   Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Audio } from 'expo-av';
+import {
+  setAudioModeAsync,
+  useAudioPlayer,
+  useAudioPlayerStatus,
+} from 'expo-audio';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeGuaranteed } from '../context/ThemeContext';
 import { useMeditation } from '../context/MeditationContext';
@@ -70,69 +74,45 @@ const RelaxationSoundScreen: React.FC<RelaxationSoundScreenProps> = ({ route, na
   useThemeGuaranteed();
   const { setIsMeditationActive } = useMeditation();
   const { soundType } = route.params;
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const player = useAudioPlayer(audioFiles[soundType]);
+  const playerStatus = useAudioPlayerStatus(player);
   const isStoppingRef = useRef(false);
-  const [elapsedTime, setElapsedTime] = useState(0);
 
-  const stopAndUnload = useCallback(async () => {
-    const currentSound = soundRef.current;
-    if (!currentSound) return;
-
-    soundRef.current = null;
+  const stopAndUnload = useCallback(() => {
     try {
-      await currentSound.stopAsync();
+      player.pause();
     } catch {
       // Already stopped
     }
     try {
-      await currentSound.unloadAsync();
+      player.remove();
     } catch {
       // Already unloaded
     }
-  }, []);
+  }, [player]);
 
-  const stopAudio = useCallback(async () => {
+  const stopAudio = useCallback(() => {
     if (isStoppingRef.current) return;
     isStoppingRef.current = true;
 
-    await stopAndUnload();
+    stopAndUnload();
     setIsMeditationActive(false);
     navigation.goBack();
   }, [navigation, setIsMeditationActive, stopAndUnload]);
 
   useEffect(() => {
     setIsMeditationActive(true);
+    isStoppingRef.current = false;
 
     const loadAudio = async () => {
       try {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          staysActiveInBackground: false,
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
+        await setAudioModeAsync({
+          allowsRecording: false,
+          playsInSilentMode: true,
+          interruptionMode: 'duckOthers',
         });
-
-        const audioFile = audioFiles[soundType];
-        if (!audioFile) return;
-
-        const { sound: audioSound } = await Audio.Sound.createAsync(
-          audioFile,
-          { shouldPlay: true, isLooping: true },
-        );
-
-        if (isStoppingRef.current) {
-          await audioSound.unloadAsync();
-          return;
-        }
-
-        soundRef.current = audioSound;
-
-        audioSound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.positionMillis !== undefined) {
-            setElapsedTime(status.positionMillis);
-          }
-        });
+        player.loop = true;
+        player.play();
       } catch (error) {
         console.error('Error loading audio:', error);
       }
@@ -150,7 +130,9 @@ const RelaxationSoundScreen: React.FC<RelaxationSoundScreenProps> = ({ route, na
       stopAndUnload();
       setIsMeditationActive(false);
     };
-  }, [navigation, setIsMeditationActive, soundType, stopAndUnload]);
+  }, [navigation, player, setIsMeditationActive, soundType, stopAndUnload]);
+
+  const elapsedTime = Math.floor((playerStatus.currentTime ?? 0) * 1000);
 
   const formatTime = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000);

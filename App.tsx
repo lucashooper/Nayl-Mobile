@@ -57,9 +57,26 @@ import AppLoadingScreen from './src/components/AppLoadingScreen';
 import QuickActionsModal from './src/components/QuickActionsModal';
 import iapService from './src/services/iapService';
 import authService from './src/services/authService';
+import sessionService from './src/services/sessionService';
 
 const Tab = createBottomTabNavigator();
 const navigationRef = createNavigationContainerRef<any>();
+
+const ONBOARDING_ROUTES = new Set(['Onboarding', 'Login', 'OnboardingQuestionnaire', 'NaylProPaywall']);
+
+function getActiveRouteName(state: { routes: { name: string; state?: unknown }[]; index: number } | undefined): string | undefined {
+  if (!state?.routes?.length || state.index == null) return undefined;
+  const route = state.routes[state.index];
+  if (route.state) {
+    return getActiveRouteName(route.state as typeof state);
+  }
+  return route.name;
+}
+
+function isOnboardingRoute(state: ReturnType<typeof navigationRef.getRootState>): boolean {
+  const routeName = getActiveRouteName(state as Parameters<typeof getActiveRouteName>[0]);
+  return routeName ? ONBOARDING_ROUTES.has(routeName) : false;
+}
 
 // Simple function to control meditation state
 export const setMeditationActive = (active: boolean) => {
@@ -82,8 +99,17 @@ function AppContent() {
   const tabBarBottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 8 : 0);
   const tabBarHeight = 64 + tabBarBottomInset;
   
-  const [isOnboardingScreen, setIsOnboardingScreen] = useState(false);
+  const [isOnboardingScreen, setIsOnboardingScreen] = useState(() => {
+    const cachedHasUser = sessionService.getCachedHasUser();
+    return cachedHasUser === false;
+  });
   const [quickMenuVisible, setQuickMenuVisible] = useState(false);
+
+  const syncTabBarVisibility = (state = navigationRef.getRootState()) => {
+    if (state) {
+      setIsOnboardingScreen(isOnboardingRoute(state));
+    }
+  };
 
   useEffect(() => {
     preloadDeferredAssets();
@@ -95,25 +121,8 @@ function AppContent() {
     <>
     <NavigationContainer
       ref={navigationRef}
-      onStateChange={(state) => {
-        // Check if current route is an onboarding screen
-        if (state?.routes && state.index !== undefined) {
-          const currentRoute = state.routes[state.index];
-          if (currentRoute?.state?.routes && currentRoute.state.index !== undefined) {
-            const currentStackRoute = currentRoute.state.routes[currentRoute.state.index];
-            const isOnboarding = currentStackRoute?.name &&
-              (currentStackRoute.name === 'OnboardingQuestionnaire' ||
-                currentStackRoute.name === 'Onboarding' ||
-                currentStackRoute.name === 'Login');
-            
-            setIsOnboardingScreen(isOnboarding || false);
-          } else {
-            // No nested routes - check if we're on the Home tab showing onboarding
-            const isHomeTab = currentRoute?.name === 'Home';
-            setIsOnboardingScreen(false);
-          }
-        }
-      }}
+      onReady={() => syncTabBarVisibility()}
+      onStateChange={(state) => syncTabBarVisibility(state ?? undefined)}
     >
       <Tab.Navigator
         screenOptions={{
@@ -389,7 +398,7 @@ export default function App() {
   const [showSplashOverlay, setShowSplashOverlay] = useState(true);
 
   useEffect(() => {
-    SplashScreen.setOptions({ duration: 300, fade: true });
+    SplashScreen.hideAsync().catch(() => {});
 
     async function loadResources() {
       try {
@@ -442,11 +451,21 @@ export default function App() {
       )}
 
       {showSplashOverlay && (
-        <AppLoadingScreen
-          bootReady={bootReady}
-          onFinish={() => setShowSplashOverlay(false)}
-        />
+        <View style={styles.splashHost}>
+          <AppLoadingScreen
+            bootReady={bootReady}
+            onFinish={() => setShowSplashOverlay(false)}
+          />
+        </View>
       )}
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  splashHost: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 9999,
+    elevation: 9999,
+  },
+});

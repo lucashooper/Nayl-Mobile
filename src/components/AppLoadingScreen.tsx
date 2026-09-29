@@ -1,7 +1,6 @@
-import React, { useMemo, useEffect, useRef } from 'react';
-import { View, Image, StyleSheet, Dimensions } from 'react-native';
+import React, { useMemo, useEffect } from 'react';
+import { View, Image, Text, StyleSheet, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import Animated, {
   useSharedValue,
@@ -11,7 +10,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('screen');
 
 interface AppLoadingScreenProps {
   bootReady: boolean;
@@ -20,7 +19,6 @@ interface AppLoadingScreenProps {
 
 const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ bootReady, onFinish }) => {
   const overlayOpacity = useSharedValue(1);
-  const nativeSplashHidden = useRef(false);
 
   const stars = useMemo(
     () =>
@@ -36,11 +34,6 @@ const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ bootReady, onFinish
 
   useEffect(() => {
     if (!bootReady) return;
-
-    if (!nativeSplashHidden.current) {
-      nativeSplashHidden.current = true;
-      SplashScreen.hideAsync().catch(() => {});
-    }
 
     overlayOpacity.value = withTiming(
       0,
@@ -61,11 +54,6 @@ const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ bootReady, onFinish
     <Animated.View style={[styles.container, overlayStyle]} pointerEvents={bootReady ? 'none' : 'auto'}>
       <StatusBar style="light" />
 
-      <LinearGradient
-        colors={['#020408', '#090A0F', '#000000']}
-        style={StyleSheet.absoluteFillObject}
-      />
-
       <View style={styles.starfield} pointerEvents="none">
         {stars.map((star) => (
           <View
@@ -84,10 +72,11 @@ const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ bootReady, onFinish
         ))}
       </View>
 
-      <View style={styles.content}>
+      <View style={styles.centerWrap} pointerEvents="none">
+        <Text style={styles.brandTitle}>Nayl</Text>
         <Image
-          source={require('../../assets/splash.png')}
-          style={styles.splashImage}
+          source={require('../../assets/cosmic-nail-nobg.webp')}
+          style={styles.logoImage}
           resizeMode="contain"
         />
       </View>
@@ -97,25 +86,35 @@ const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ bootReady, onFinish
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width,
+    height,
     backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
     zIndex: 9999,
   },
   starfield: {
     ...StyleSheet.absoluteFillObject,
   },
-  content: {
-    alignItems: 'center',
+  centerWrap: {
+    flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    alignItems: 'center',
+    paddingHorizontal: 48,
   },
-  splashImage: {
-    width: width * 0.55,
-    height: width * 0.55,
-    maxWidth: 280,
-    maxHeight: 280,
+  brandTitle: {
+    fontSize: 56,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  logoImage: {
+    width: Math.min(width * 0.58, 240),
+    height: Math.min(height * 0.26, 280),
+    backgroundColor: 'transparent',
   },
 });
 

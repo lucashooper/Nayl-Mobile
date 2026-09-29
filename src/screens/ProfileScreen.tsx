@@ -18,6 +18,7 @@ import BackButton from '../components/BackButton';
 
 type ProfileStackParamList = {
   ProfileMain: undefined;
+  NaylProPaywall: undefined;
   Reasons: undefined;
   TriggerHistory: undefined;
 };
@@ -946,6 +947,56 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
 
         {/* Profile Options */}
         <View style={{ marginTop: SPACING.xl }}>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: SPACING.md,
+              paddingHorizontal: SPACING.lg,
+              ...solidCardStyle,
+              borderRadius: SPACING.md,
+              marginBottom: SPACING.sm,
+            }}
+            onPress={() => navigation.navigate('NaylProPaywall')}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: 'rgba(193, 255, 114, 0.12)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: SPACING.md,
+                borderWidth: 1,
+                borderColor: 'rgba(193, 255, 114, 0.25)',
+              }}
+            >
+              <Ionicons name="star-outline" size={20} color="#C1FF72" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: colors.primaryText,
+                  fontWeight: '600',
+                }}
+              >
+                Nayl Pro Plans
+              </Text>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: colors.secondaryText,
+                  marginTop: 2,
+                }}
+              >
+                Weekly, Monthly, and Yearly subscriptions
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
+          </TouchableOpacity>
+
           <TouchableOpacity style={{ 
             flexDirection: 'row',
             alignItems: 'center',

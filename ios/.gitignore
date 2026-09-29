@@ -23,8 +23,17 @@ DerivedData
 project.xcworkspace
 .xcode.env.local
 
+# Fastlane secrets
+.env
+*.p8
+*.ipa
+
 # Bundle artifacts
 *.jsbundle
 
 # CocoaPods
 /Pods/
+
+# Bundler
+/vendor/bundle/
+.bundle/

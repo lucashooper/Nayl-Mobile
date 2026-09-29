@@ -32,10 +32,11 @@ import { CommonActions, useNavigation } from '@react-navigation/native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import GoogleIcon from '../components/GoogleIcon';
 
 import * as AppleAuthentication from 'expo-apple-authentication';
 
-import authService, { AuthSignInResult, isGoogleSignInConfigured } from '../services/authService';
+import authService, { AuthSignInResult } from '../services/authService';
 
 import sessionService from '../services/sessionService';
 
@@ -62,27 +63,16 @@ const LoginScreen: React.FC = () => {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const [appleAuthAvailable, setAppleAuthAvailable] = useState(Platform.OS === 'ios');
-
-
+  const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
 
   useEffect(() => {
-
     if (Platform.OS !== 'ios') return;
-
     AppleAuthentication.isAvailableAsync()
-
       .then(setAppleAuthAvailable)
-
       .catch(() => setAppleAuthAvailable(false));
-
   }, []);
 
-
-
   const authButtonWidth = Math.min(width - 64, 440);
-
-  const googleSignInConfigured = isGoogleSignInConfigured();
 
 
 
@@ -192,7 +182,7 @@ const LoginScreen: React.FC = () => {
 
                 index: 0,
 
-                routes: [{ name: 'Onboarding', params: { paywallOnly: true } }],
+                routes: [{ name: 'Onboarding', params: { paywallOnly: true, forceDisplay: true } }],
 
               }),
 
@@ -360,37 +350,20 @@ const LoginScreen: React.FC = () => {
         bounces={false}
       >
         <Text style={styles.title}>Welcome back</Text>
-        <Text style={styles.subtitle}>
-          Sign in to restore your progress and Nayl Pro subscription.
-        </Text>
-
-        <Text style={styles.sectionLabel}>Sign in with email</Text>
+        <Text style={styles.subtitle}>Sign in to your account</Text>
 
         <TextInput
-
           style={[styles.input, { width: authButtonWidth, alignSelf: 'center' }]}
-
           placeholder="Email"
-
           placeholderTextColor="rgba(255,255,255,0.4)"
-
           autoCapitalize="none"
-
           autoCorrect={false}
-
           keyboardType="email-address"
-
           textContentType="emailAddress"
-
           value={email}
-
           onChangeText={setEmail}
-
           editable={!loading}
-
         />
-
-
 
         <View style={[styles.passwordField, { width: authButtonWidth, alignSelf: 'center' }]}>
           <TextInput
@@ -420,39 +393,22 @@ const LoginScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-
-
         <TouchableOpacity
-
           style={[styles.emailButton, { width: authButtonWidth, alignSelf: 'center' }]}
-
           onPress={handleEmailSignIn}
-
           activeOpacity={0.85}
-
           disabled={!!loading || !email.trim() || !password}
-
         >
-
           {loading === 'email' ? (
-
             <ActivityIndicator color="#111" />
-
           ) : (
-
             <Text style={styles.emailButtonText}>Sign in with email</Text>
-
           )}
-
         </TouchableOpacity>
 
-
-
         <Text style={styles.dividerText}>or continue with</Text>
-      </ScrollView>
 
-      <View style={[styles.socialSection, { maxWidth: authButtonWidth + 64, alignSelf: 'center', width: '100%' }]}>
-        {Platform.OS === 'ios' && appleAuthAvailable && (
+        {Platform.OS === 'ios' && appleAuthAvailable ? (
           <AppleAuthentication.AppleAuthenticationButton
             buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
             buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
@@ -460,37 +416,40 @@ const LoginScreen: React.FC = () => {
             style={[styles.appleButton, { width: authButtonWidth, alignSelf: 'center' }]}
             onPress={handleAppleSignIn}
           />
-        )}
-
-        {Platform.OS === 'ios' && !appleAuthAvailable && (
-          <Text style={styles.unavailableText}>
-            Sign in with Apple is unavailable on this device.
-          </Text>
-        )}
-
-        {googleSignInConfigured ? (
+        ) : Platform.OS === 'ios' ? (
           <TouchableOpacity
-            style={[styles.googleButton, { width: authButtonWidth, alignSelf: 'center' }]}
-            onPress={handleGoogleSignIn}
+            style={[styles.appleFallbackButton, { width: authButtonWidth, alignSelf: 'center' }]}
+            onPress={handleAppleSignIn}
             activeOpacity={0.85}
             disabled={!!loading}
           >
-            {loading === 'google' ? (
-              <ActivityIndicator color="#111" />
+            {loading === 'apple' ? (
+              <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
+              <>
+                <Ionicons name="logo-apple" size={22} color="#fff" style={styles.socialIcon} />
+                <Text style={styles.appleFallbackText}>Sign in with Apple</Text>
+              </>
             )}
           </TouchableOpacity>
         ) : null}
 
-        {loading === 'apple' && (
-          <ActivityIndicator color="#fff" style={styles.loader} />
-        )}
-
-        <Text style={styles.footer}>
-          New to Nayl? Go back and tap Begin to create your plan.
-        </Text>
-      </View>
+        <TouchableOpacity
+          style={[styles.googleButton, { width: authButtonWidth, alignSelf: 'center' }]}
+          onPress={handleGoogleSignIn}
+          activeOpacity={0.85}
+          disabled={!!loading}
+        >
+          {loading === 'google' ? (
+            <ActivityIndicator color="#111" />
+          ) : (
+            <>
+              <GoogleIcon size={20} />
+              <Text style={styles.googleButtonText}>Continue with Google</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
 
     </KeyboardAvoidingView>
 
@@ -541,39 +500,10 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-
     flexGrow: 1,
-
     paddingHorizontal: 32,
-
     paddingTop: 112,
-
-    paddingBottom: 16,
-
-  },
-
-  socialSection: {
-
-    paddingHorizontal: 32,
-
     paddingBottom: 48,
-
-  },
-
-  sectionLabel: {
-
-    fontSize: 14,
-
-    fontWeight: '600',
-
-    color: 'rgba(255,255,255,0.55)',
-
-    marginBottom: 12,
-
-    textAlign: 'left',
-
-    alignSelf: 'stretch',
-
   },
 
   title: {
@@ -591,51 +521,48 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-
     fontSize: 16,
-
     color: 'rgba(255,255,255,0.65)',
-
     textAlign: 'center',
-
     lineHeight: 24,
-
-    marginBottom: 40,
-
+    marginBottom: 32,
   },
 
   appleButton: {
-
     height: 56,
-
-    marginBottom: 16,
-
+    marginBottom: 12,
   },
 
-  unavailableText: {
+  appleFallbackButton: {
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#000',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
 
-    color: 'rgba(255,255,255,0.55)',
+  appleFallbackText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+  },
 
-    fontSize: 14,
-
-    textAlign: 'center',
-
-    marginBottom: 16,
-
+  socialIcon: {
+    marginRight: 10,
   },
 
   googleButton: {
-
     height: 56,
-
     borderRadius: 28,
-
     backgroundColor: '#fff',
-
+    flexDirection: 'row',
     justifyContent: 'center',
-
     alignItems: 'center',
-
+    gap: 10,
   },
 
   input: {
@@ -740,7 +667,7 @@ const styles = StyleSheet.create({
 
     fontSize: 14,
 
-    marginVertical: 20,
+    marginVertical: 24,
 
   },
 
@@ -751,26 +678,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
 
     fontWeight: '600',
-
-  },
-
-  loader: {
-
-    marginTop: 16,
-
-  },
-
-  footer: {
-
-    marginTop: 32,
-
-    fontSize: 14,
-
-    color: 'rgba(255,255,255,0.45)',
-
-    textAlign: 'center',
-
-    lineHeight: 20,
 
   },
 

@@ -1,19 +1,29 @@
-import Purchases, {
-  PurchasesOffering,
-  PurchasesPackage,
-  CustomerInfo,
-  LOG_LEVEL,
-  PURCHASES_ERROR_CODE,
-} from 'react-native-purchases';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import sessionService from './sessionService';
 
+export type IAPPackage = import('react-native-purchases').PurchasesPackage;
+type PurchasesOffering = import('react-native-purchases').PurchasesOffering;
+type CustomerInfo = import('react-native-purchases').CustomerInfo;
+
 const REVENUECAT_IOS_API_KEY =
   process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim() ?? '';
 const REVENUECAT_ANDROID_API_KEY =
   process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY?.trim() ?? '';
+
+function isExpoGo(): boolean {
+  return Constants.appOwnership === 'expo';
+}
+
+function getPurchasesModule(): typeof import('react-native-purchases') | null {
+  if (isExpoGo()) return null;
+  try {
+    return require('react-native-purchases') as typeof import('react-native-purchases');
+  } catch {
+    return null;
+  }
+}
 
 /** Production Android keys start with goog_. Test keys (test_) must not be used in release builds. */
 function hasAndroidProductionKey(): boolean {
@@ -27,8 +37,9 @@ function hasIosKey(): boolean {
   return Boolean(REVENUECAT_IOS_API_KEY) && !REVENUECAT_IOS_API_KEY.includes('REPLACE');
 }
 
-/** Whether RevenueCat should be initialized on this platform (Insight-style Android sideload fallback). */
+/** Whether RevenueCat should be initialized on this platform. */
 export function isPurchasesEnabled(): boolean {
+  if (isExpoGo()) return false;
   if (Platform.OS === 'android') {
     return hasAndroidProductionKey();
   }
@@ -54,7 +65,6 @@ function hasProAccess(customerInfo: CustomerInfo): boolean {
     return true;
   }
 
-  // Fallback if RevenueCat entitlement identifier differs from config
   if (Object.values(activeEntitlements).some((e) => e.isActive)) {
     return true;
   }
@@ -77,9 +87,10 @@ class IAPService {
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    if (Constants.appOwnership === 'expo') {
-      if (__DEV__) {
-        console.warn('RevenueCat is unavailable in Expo Go. Use a development build to test purchases.');
+    const Purchases = getPurchasesModule()?.default;
+    if (!Purchases) {
+      if (__DEV__ && isExpoGo()) {
+        console.warn('RevenueCat is unavailable in Expo Go. Email login still works for UI testing.');
       }
       return;
     }
@@ -99,6 +110,7 @@ class IAPService {
       Platform.OS === 'android' ? REVENUECAT_ANDROID_API_KEY : REVENUECAT_IOS_API_KEY;
 
     try {
+      const { LOG_LEVEL } = getPurchasesModule()!;
       if (__DEV__) {
         await Purchases.setLogLevel(LOG_LEVEL.DEBUG);
       }
@@ -109,10 +121,12 @@ class IAPService {
     }
   }
 
-  /** Ensure a local user + RevenueCat identity exist before purchase/restore */
   async ensurePurchaseReady(): Promise<void> {
     await this.initialize();
     if (!this.initialized) return;
+
+    const Purchases = getPurchasesModule()?.default;
+    if (!Purchases) return;
 
     if (!(await sessionService.hasUser())) {
       await sessionService.initializeUser();
@@ -126,6 +140,8 @@ class IAPService {
     try {
       await this.initialize();
       if (!this.initialized) return;
+      const Purchases = getPurchasesModule()?.default;
+      if (!Purchases) return;
       await Purchases.logIn(userId);
     } catch (error) {
       console.error('RevenueCat identify user error:', error);
@@ -136,6 +152,8 @@ class IAPService {
     try {
       await this.initialize();
       if (!this.initialized) return;
+      const Purchases = getPurchasesModule()?.default;
+      if (!Purchases) return;
       await Purchases.logOut();
     } catch (error) {
       console.error('RevenueCat logout error:', error);
@@ -155,6 +173,8 @@ class IAPService {
     try {
       await this.initialize();
       if (!this.initialized) return null;
+      const Purchases = getPurchasesModule()?.default;
+      if (!Purchases) return null;
       return await Purchases.getCustomerInfo();
     } catch {
       return null;
@@ -165,6 +185,8 @@ class IAPService {
     try {
       await this.ensurePurchaseReady();
       if (!this.initialized) return null;
+      const Purchases = getPurchasesModule()?.default;
+      if (!Purchases) return null;
       const offerings = await Purchases.getOfferings();
       return offerings.current;
     } catch (error) {
@@ -173,17 +195,23 @@ class IAPService {
     }
   }
 
-  async purchasePackage(pkg: PurchasesPackage): Promise<{ success: boolean; customerInfo?: CustomerInfo; userCancelled?: boolean }> {
+  async purchasePackage(
+    pkg: IAPPackage,
+  ): Promise<{ success: boolean; customerInfo?: CustomerInfo; userCancelled?: boolean }> {
     try {
       await this.ensurePurchaseReady();
       if (!this.initialized) {
         throw new Error('Purchases are not configured.');
       }
 
+      const Purchases = getPurchasesModule()?.default;
+      if (!Purchases) {
+        throw new Error('Purchases are not configured.');
+      }
+
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       let isPro = hasProAccess(customerInfo);
 
-      // Entitlements can lag briefly after a sandbox purchase — re-sync once
       if (!isPro) {
         const synced = await this.syncCustomerInfo();
         if (synced) {
@@ -204,9 +232,9 @@ class IAPService {
         return { success: false, userCancelled: true };
       }
 
-      // Sandbox often reports "already subscribed" — sync from RevenueCat instead of failing
+      const { PURCHASES_ERROR_CODE } = getPurchasesModule() ?? {};
       const alreadyOwned =
-        error.code === PURCHASES_ERROR_CODE.PRODUCT_ALREADY_PURCHASED_ERROR ||
+        error.code === PURCHASES_ERROR_CODE?.PRODUCT_ALREADY_PURCHASED_ERROR ||
         error.code === '6';
 
       if (alreadyOwned || error.message?.toLowerCase().includes('already')) {
@@ -217,7 +245,6 @@ class IAPService {
         }
       }
 
-      // Last resort: sync in case Apple charged but RC threw
       const synced = await this.syncCustomerInfo();
       if (synced && hasProAccess(synced)) {
         await this.cacheProStatus(true);
@@ -235,6 +262,8 @@ class IAPService {
       if (!this.initialized) {
         return { success: false };
       }
+      const Purchases = getPurchasesModule()?.default;
+      if (!Purchases) return { success: false };
       const customerInfo = await Purchases.restorePurchases();
       const isPro = hasProAccess(customerInfo);
       await this.cacheProStatus(isPro);
@@ -256,6 +285,8 @@ class IAPService {
         return false;
       }
 
+      const Purchases = getPurchasesModule()?.default;
+      if (!Purchases) return false;
       const customerInfo = await Purchases.getCustomerInfo();
       const isPro = hasProAccess(customerInfo);
       await this.cacheProStatus(isPro);

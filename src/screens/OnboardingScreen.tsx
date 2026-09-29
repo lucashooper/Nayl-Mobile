@@ -8,12 +8,15 @@ import { markWelcomePending } from '../services/welcomeService';
 
 type OnboardingRouteParams = {
   paywallOnly?: boolean;
+  forceDisplay?: boolean;
 };
 
 const OnboardingScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const paywallOnly = (route.params as OnboardingRouteParams | undefined)?.paywallOnly ?? false;
+  const params = (route.params as OnboardingRouteParams | undefined) ?? {};
+  const paywallOnly = params.paywallOnly ?? false;
+  const forceDisplay = params.forceDisplay ?? paywallOnly;
 
   const handleFinish = async (userName: string) => {
     const userId = await sessionService.initializeUser();
@@ -48,6 +51,7 @@ const OnboardingScreen: React.FC = () => {
       onComplete={handleFinish}
       onLogin={handleLogin}
       paywallOnly={paywallOnly}
+      forceDisplay={forceDisplay}
     />
   );
 };

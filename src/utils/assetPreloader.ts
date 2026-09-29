@@ -1,6 +1,5 @@
 import { Asset } from 'expo-asset';
 import { Image } from 'react-native';
-import { Audio } from 'expo-av';
 import profileService from '../services/profileService';
 import sessionService from '../services/sessionService';
 import marketingDemoService from '../services/marketingDemoService';
@@ -101,16 +100,14 @@ export async function preloadUserSessionData(): Promise<void> {
 }
 
 async function preloadAudio(): Promise<void> {
-  await Promise.all(
-    AUDIO_ASSETS.map(async (asset) => {
-      try {
-        const { sound } = await Audio.Sound.createAsync(asset, { shouldPlay: false });
-        await sound.unloadAsync();
-      } catch {
-        // Non-critical
-      }
-    }),
-  );
+  try {
+    const { preload } = await import('expo-audio');
+    await Promise.all(
+      AUDIO_ASSETS.map((asset) => preload(asset).catch(() => undefined)),
+    );
+  } catch {
+    // Audio preload is optional (e.g. if native module unavailable)
+  }
 }
 
 async function preloadVideos(): Promise<void> {

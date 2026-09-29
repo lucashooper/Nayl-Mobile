@@ -20,8 +20,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import hapticService, { HapticType, HapticIntensity } from '../services/hapticService';
-import iapService from '../services/iapService';
-import { PurchasesPackage } from 'react-native-purchases';
+import iapService, { IAPPackage } from '../services/iapService';
 
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../constants/legalUrls';
 
@@ -29,14 +28,16 @@ const { width, height } = Dimensions.get('window');
 
 interface NaylProUpgradeScreenProps {
   onUnlockPro: () => void;
+  /** Always show plans — used for App Review and Profile → Plans (skips auto-dismiss). */
+  forceDisplay?: boolean;
 }
 
 type PlanId = 'weekly' | 'monthly' | 'yearly';
 
 const PLAN_DETAILS: Record<PlanId, { title: string; duration: string; cadence: string }> = {
-  weekly: { title: 'Nayl Pro Weekly', duration: '1 week', cadence: 'week' },
-  monthly: { title: 'Nayl Pro Monthly', duration: '1 month', cadence: 'month' },
-  yearly: { title: 'Nayl Pro Yearly', duration: '1 year', cadence: 'year' },
+  weekly: { title: 'Nayl Pro: Weekly', duration: '1 week', cadence: 'week' },
+  monthly: { title: 'Nayl Pro: Monthly', duration: '1 month', cadence: 'month' },
+  yearly: { title: 'Nayl Pro: Yearly', duration: '1 year', cadence: 'year' },
 };
 
 // Shown only before StoreKit prices load (Expo Go / offline). Production uses localized priceString from Apple.
@@ -48,32 +49,37 @@ const FALLBACK_PRICES: Record<PlanId, string> = {
 
 const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
   onUnlockPro,
+  forceDisplay = false,
 }) => {
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('weekly');
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [packages, setPackages] = useState<Record<string, PurchasesPackage>>({});
+  const [packages, setPackages] = useState<Record<string, IAPPackage>>({});
 
   // Fetch available packages from RevenueCat on mount
   useEffect(() => {
     const loadOfferings = async () => {
       try {
-        // Android sideload / investor builds skip billing until Play + goog_ key exist
-        if (!iapService.isPurchasesEnabled()) {
-          onUnlockPro();
-          return;
+        if (!forceDisplay) {
+          if (!iapService.isPurchasesEnabled()) {
+            onUnlockPro();
+            return;
+          }
+
+          const alreadyPro = await iapService.isProUser();
+          if (alreadyPro) {
+            onUnlockPro();
+            return;
+          }
         }
 
-        // If already subscribed (e.g. sandbox retry), skip paywall
-        const alreadyPro = await iapService.isProUser();
-        if (alreadyPro) {
-          onUnlockPro();
+        if (!iapService.isPurchasesEnabled()) {
           return;
         }
 
         const offering = await iapService.getOfferings();
         if (offering?.availablePackages) {
-          const pkgMap: Record<string, PurchasesPackage> = {};
+          const pkgMap: Record<string, IAPPackage> = {};
           for (const pkg of offering.availablePackages) {
             const productId = pkg.product.identifier.toLowerCase();
             if (productId.includes('weekly')) {
@@ -96,7 +102,13 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
       }
     };
     loadOfferings();
-  }, []);
+  }, [forceDisplay, onUnlockPro]);
+
+  const getPlanTitle = (planId: PlanId): string => {
+    const pkg = packages[planId];
+    if (pkg?.product?.title) return pkg.product.title;
+    return PLAN_DETAILS[planId].title;
+  };
 
   const getPriceString = (planId: PlanId): string => {
     const pkg = packages[planId];
@@ -126,7 +138,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
   const getSelectedPlanSummary = (): { title: string; duration: string; price: string; cadence: string } => {
     const details = PLAN_DETAILS[selectedPlan];
     return {
-      title: details.title,
+      title: getPlanTitle(selectedPlan),
       duration: details.duration,
       price: getPriceString(selectedPlan),
       cadence: details.cadence,
@@ -409,7 +421,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 <View style={styles.popularTag}>
                   <Text style={styles.popularTagText}>most popular</Text>
                 </View>
-                <Text style={styles.purchaseOptionTitle}>Weekly</Text>
+                <Text style={styles.purchaseOptionTitle}>{getPlanTitle('weekly')}</Text>
                 <Text style={styles.purchaseOptionPrice}>{getPriceString('weekly')}</Text>
                 <Text style={styles.purchaseOptionCadence}>per week</Text>
               </TouchableOpacity>
@@ -420,7 +432,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 onPress={() => setSelectedPlan('yearly')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.purchaseOptionTitle}>Yearly</Text>
+                <Text style={styles.purchaseOptionTitle}>{getPlanTitle('yearly')}</Text>
                 <Text style={styles.purchaseOptionPrice}>{getPriceString('yearly')}</Text>
                 <Text style={styles.purchaseOptionCadence}>per year</Text>
               </TouchableOpacity>
@@ -431,7 +443,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 onPress={() => setSelectedPlan('monthly')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.purchaseOptionTitle}>Monthly</Text>
+                <Text style={styles.purchaseOptionTitle}>{getPlanTitle('monthly')}</Text>
                 <Text style={styles.purchaseOptionPrice}>{getPriceString('monthly')}</Text>
                 <Text style={styles.purchaseOptionCadence}>per month</Text>
               </TouchableOpacity>
