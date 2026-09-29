@@ -32,7 +32,10 @@ const OnboardingScreen: React.FC = () => {
       }
     }
 
-    await markWelcomePending();
+    // Paywall-only runs are returning users who have already been welcomed.
+    if (!paywallOnly) {
+      await markWelcomePending();
+    }
 
     navigation.dispatch(
       CommonActions.reset({

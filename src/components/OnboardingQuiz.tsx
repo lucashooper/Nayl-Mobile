@@ -580,8 +580,13 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
         style={styles.pager}
         initialPage={paywallOnly ? PAYWALL_PAGE_INDEX : 0}
         onPageSelected={onPageSelected}
-        // Swiping is off on the name page so it only advances via Continue.
-        scrollEnabled={!isTransitioning && !paywallOnly && currentPage !== nameInputPageIndex}
+        // No swiping on the name page (Continue only) or the paywall (hard paywall).
+        scrollEnabled={
+          !isTransitioning &&
+          !paywallOnly &&
+          currentPage !== nameInputPageIndex &&
+          currentPage !== PAYWALL_PAGE_INDEX
+        }
         pageMargin={0}
         overdrag={false}
         overScrollMode="never"
@@ -1096,7 +1101,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
           {currentPage === 17 ? (
             <PersonalizedPlanScreen
               userName={userName}
-              onStartJourney={handleComplete}
+              onStartJourney={handleNavigateToProUpgrade}
               onNavigateToProUpgrade={handleNavigateToProUpgrade}
             />
           ) : (

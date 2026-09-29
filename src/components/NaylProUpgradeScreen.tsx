@@ -135,6 +135,27 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
     return null;
   };
 
+  // e.g. "3-Day Free Trial, then £4.99/week". Only shown when the weekly product
+  // really has a free intro offer, so the card never advertises a trial Apple won't give.
+  const getWeeklyTrialLabel = (): string | null => {
+    const intro = packages.weekly?.product?.introPrice as
+      | { price?: number; periodNumberOfUnits?: number; periodUnit?: string; cycles?: number }
+      | null
+      | undefined;
+
+    if (!intro || intro.price == null || intro.price > 0) {
+      return null;
+    }
+
+    const units = intro.periodNumberOfUnits ?? intro.cycles;
+    if (units == null || !intro.periodUnit) {
+      return null;
+    }
+
+    const unit = intro.periodUnit.charAt(0).toUpperCase() + intro.periodUnit.slice(1).toLowerCase();
+    return `${units}-${unit} Free Trial, then ${getPriceString('weekly')}/week`;
+  };
+
   const getSelectedPlanSummary = (): { title: string; duration: string; price: string; cadence: string } => {
     const details = PLAN_DETAILS[selectedPlan];
     return {
@@ -423,7 +444,9 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 </View>
                 <Text style={styles.purchaseOptionTitle}>{getPlanTitle('weekly')}</Text>
                 <Text style={styles.purchaseOptionPrice}>{getPriceString('weekly')}</Text>
-                <Text style={styles.purchaseOptionCadence}>per week</Text>
+                <Text style={styles.purchaseOptionCadence} numberOfLines={3}>
+                  {getWeeklyTrialLabel() ?? 'per week'}
+                </Text>
               </TouchableOpacity>
 
               {/* Yearly Option */}

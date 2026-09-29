@@ -46,7 +46,8 @@ export function isPurchasesEnabled(): boolean {
   return hasIosKey();
 }
 
-const ENTITLEMENT_ID = 'default';
+// 'pro' is the RevenueCat entitlement; 'default' is kept for older configs.
+const ENTITLEMENT_IDS = ['pro', 'default'];
 const SUBSCRIPTION_STATUS_BASE = '@nayl_is_pro';
 const PRODUCT_ID_PREFIX = 'nayl_pro';
 
@@ -61,7 +62,7 @@ async function getSubscriptionStorageKey(): Promise<string> {
 function hasProAccess(customerInfo: CustomerInfo): boolean {
   const activeEntitlements = customerInfo.entitlements.active;
 
-  if (activeEntitlements[ENTITLEMENT_ID]?.isActive) {
+  if (ENTITLEMENT_IDS.some((id) => activeEntitlements[id]?.isActive)) {
     return true;
   }
 
