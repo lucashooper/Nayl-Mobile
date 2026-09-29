@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nayl App Store Screenshots</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Fraunces:opsz,wght@9..144,700&family=Inter:wght@400;500;600;700;800&family=Libre+Caslon+Text:wght@700&family=Playfair+Display:wght@700&display=swap"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="bg-[#EEEBE3] text-stone-800">
+  <div class="flex h-screen flex-col">
+    <header class="flex flex-wrap items-center gap-4 border-b border-stone-300 bg-[#F7F6F0] px-5 py-3">
+      <div class="mr-2">
+        <h1 class="font-['DM_Serif_Display'] text-2xl leading-none text-stone-900">Nayl Screenshots</h1>
+        <p class="text-xs text-stone-500">App Store marketing generator</p>
+      </div>
+      <nav id="size-tabs" class="flex gap-1"></nav>
+      <div class="ml-auto flex items-center gap-3">
+        <span id="export-status" class="text-xs text-stone-500"></span>
+        <button
+          id="export-all"
+          class="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow hover:bg-emerald-800 disabled:opacity-50"
+        >
+          Export All Resolutions
+        </button>
+      </div>
+    </header>
+    <div class="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <main class="min-h-0 flex-1 overflow-auto">
+        <div id="strip" class="flex items-start gap-4 p-6"></div>
+      </main>
+      <aside id="editor" class="w-full shrink-0 overflow-y-auto border-l border-stone-300 bg-white lg:w-[380px]"></aside>
+    </div>
+  </div>
+  <script src="vendor/jszip.min.js"></script>
+  <script src="defaults.js"></script>
+  <script src="render.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
