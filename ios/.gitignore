@@ -23,9 +23,7 @@ DerivedData
 project.xcworkspace
 .xcode.env.local
 
-# Fastlane secrets
-.env
-*.p8
+# Fastlane build output (secrets in fastlane/.env + AuthKey_*.p8 are tracked)
 *.ipa
 
 # Bundle artifacts
