@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Nayl Onboarding Analytics</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #111110;
+    --surface-1: #1a1a19;
+    --surface-2: #232321;
+    --border: #2e2e2b;
+    --grid: #2a2a27;
+    --text-1: #f2f1ed;
+    --text-2: #b4b2ab;
+    --text-3: #83817a;
+    --series: #3987e5;
+    --series-muted: #184f95;
+    --good: #0ca30c;
+    --critical: #d03b3b;
+    --focus: #7fb2f0;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-1);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+  h2 { font-size: 15px; margin: 0 0 4px; font-weight: 600; }
+  .sub { color: var(--text-3); font-size: 13px; margin: 0; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input, select, button {
+    font: inherit; color: var(--text-1); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px;
+  }
+  input { min-width: 0; flex: 1 1 220px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--series); border-color: var(--series); color: #fff; font-weight: 600; }
+  button:focus-visible, input:focus-visible, select:focus-visible, .step:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .status { color: var(--text-3); font-size: 13px; margin-top: 8px; min-height: 1.4em; }
+  .status.err { color: #f08a8a; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .kpi .label { color: var(--text-2); font-size: 12px; }
+  .kpi .value { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .kpi .note { color: var(--text-3); font-size: 12px; }
+
+  /* Funnel */
+  .funnel-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+  .funnel-scroll { overflow-x: auto; padding-bottom: 6px; }
+  .funnel { display: flex; align-items: stretch; min-width: max-content; position: relative; }
+  .step { width: 57px; flex: 1 0 57px; display: flex; flex-direction: column; align-items: center; cursor: pointer; border-radius: 8px; padding: 4px 0 6px; position: relative; }
+  .step:hover, .step.active { background: var(--surface-2); }
+  .bar-area { height: 170px; padding-top: 24px; width: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative;
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px); background-size: 100% 36.5px; background-position: 0 24px; background-clip: content-box; }
+  .bar { width: 22px; background: var(--series); border-radius: 4px 4px 0 0; min-height: 2px; transition: height .25s ease; }
+  .step.dim .bar { background: var(--series-muted); }
+  .step.converted .bar { background: var(--good); }
+  .pct { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 6px; }
+  .track { position: relative; height: 18px; width: 100%; display: flex; align-items: center; justify-content: center; margin-top: 6px; }
+  .track::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--border); }
+  .step:first-child .track::before { left: 50%; }
+  .step:last-child .track::before { right: 50%; }
+  .track .fill { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--series); }
+  .step:first-child .track .fill { left: 50%; }
+  .step:last-child .track .fill { right: 50%; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--series); border: 2px solid var(--surface-1); box-shadow: 0 0 0 2px var(--series); position: relative; z-index: 1; }
+  .step.converted .dot { background: var(--good); box-shadow: 0 0 0 2px var(--good); }
+  .count { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; margin-top: 6px; }
+  .name { font-size: 10.5px; hyphens: manual; color: var(--text-3); text-align: center; line-height: 1.25; margin-top: 2px; padding: 0 3px; height: 3.8em; overflow: hidden; }
+  .drop { position: absolute; top: 2px; right: -18px; z-index: 2; font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums;
+    color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 0 5px; pointer-events: none; }
+  .drop.big { color: #f5b3b3; border-color: #5a2a2a; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--text-2); font-size: 12px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .tooltip { position: fixed; pointer-events: none; z-index: 10; background: #0b0b0a; border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; font-size: 12px; color: var(--text-1); box-shadow: 0 6px 20px rgba(0,0,0,.45); display: none; max-width: 240px; }
+  .tooltip b { display: block; margin-bottom: 4px; }
+  .tooltip .t2 { color: var(--text-2); }
+
+  /* Table */
+  .table-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--text-3); font-weight: 500; font-size: 12px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: var(--surface-2); }
+  .muted { color: var(--text-3); }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); }
+  .badge.yes { color: var(--text-1); border-color: #1f5a1f; background: #122a12; }
+  .badge.yes::before { content: "✓"; color: var(--good); }
+  .badge.fin::before { content: "–"; color: var(--text-3); }
+  .badge.no::before { content: "×"; color: var(--critical); }
+  .mini { display: inline-block; width: 64px; height: 4px; border-radius: 2px; background: var(--border); vertical-align: middle; margin-right: 8px; overflow: hidden; }
+  .mini > span { display: block; height: 100%; background: var(--series); }
+  .empty { color: var(--text-3); padding: 24px 0; text-align: center; }
+  .chip { font-size: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; color: var(--text-2); }
+  .chip button { background: none; border: 0; padding: 0 0 0 6px; color: var(--text-2); }
+  details summary { cursor: pointer; color: var(--text-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Onboarding analytics</h1>
+      <p class="sub">Nayl onboarding funnel, from the <code>onboarding_analytics</code> table.</p>
+    </div>
+    <div class="row">
+      <label class="sub" for="range">Range</label>
+      <select id="range">
+        <option value="1">Last 24 hours</option>
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="0">All time</option>
+      </select>
+      <button id="refresh">Refresh</button>
+    </div>
+  </header>
+
+  <section class="card" id="connect">
+    <details id="connectDetails" open>
+      <summary>Connection</summary>
+      <p class="sub" style="margin:10px 0">Reads need the Supabase <b>service_role</b> key (the table blocks anon reads). It is kept only in this browser's local storage and never leaves it except to call your Supabase project.</p>
+      <div class="row">
+        <input id="url" placeholder="https://xxxx.supabase.co" autocomplete="off">
+        <input id="key" type="password" placeholder="service_role key" autocomplete="off">
+        <button class="primary" id="connectBtn">Connect</button>
+        <button id="demoBtn">Load demo data</button>
+        <button id="forgetBtn">Forget key</button>
+      </div>
+    </details>
+    <div class="status" id="status"></div>
+  </section>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section class="card">
+    <div class="funnel-head">
+      <div>
+        <h2>Step funnel</h2>
+        <p class="sub">Share of started users who reached each step. Pills show drop-off from the previous step. Click a step to filter the table.</p>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--series)"></i>Reached step</span>
+        <span><i style="background:var(--good)"></i>Converted on paywall</span>
+      </div>
+    </div>
+    <div class="funnel-scroll"><div class="funnel" id="funnel"></div></div>
+  </section>
+
+  <section class="card">
+    <div class="table-head">
+      <div>
+        <h2>Recent users</h2>
+        <p class="sub" id="tableSub"></p>
+      </div>
+      <div class="row" id="filterRow"></div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Last step</th>
+            <th class="num">Time in onboarding</th>
+            <th>Paywall</th>
+            <th class="num">Started</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="row" style="justify-content:center;margin-top:12px"><button id="more" style="display:none">Show 25 more</button></div>
+  </section>
+</div>
+<div class="tooltip" id="tip"></div>
+
+<script>
+// Keep in sync with ONBOARDING_STEP_NAMES in src/services/onboardingAnalytics.ts
+const STEPS = [
+  'Welcome', 'Hidden Costs', 'Quiz Intro',
+  'Quiz: Gender', 'Quiz: Motivations', 'Quiz: Onset', 'Quiz: Escalation',
+  'Quiz: Frequency', 'Quiz: Triggers', 'Quiz: Attempts', 'Quiz: Motivator',
+  'Name Input', 'Personalizing', 'Consequences', 'Dependency Score',
+  'Journey Chart', 'Commitment', 'Personalized Plan', 'Paywall',
+];
+const PAYWALL_INDEX = 18;
+// Soft hyphens so long names wrap inside the narrow funnel columns.
+const shy = (n) => n.replace(/(Personal|Conse|Depend|Commit|Motiv|Escal|Frequ|Attem|Motiv)(?=[a-z]{4})/g, '$1\u00AD');
+const FINISHED_INDEX = 19;   // 'Finished Without Purchase'
+const CONVERTED_INDEX = 20;  // 'Paywall Converted'
+const LS_URL = 'nayl-admin-url', LS_KEY = 'nayl-admin-key';
+
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+
+let events = [];
+let mode = null; // 'live' | 'demo'
+let stepFilter = null;
+let tableLimit = 25;
+
+function setStatus(msg, err = false) {
+  $('status').textContent = msg;
+  $('status').className = 'status' + (err ? ' err' : '');
+}
+
+function sinceISO() {
+  const days = Number($('range').value);
+  return days ? new Date(Date.now() - days * 864e5).toISOString() : null;
+}
+
+async function fetchLive() {
+  const url = $('url').value.trim().replace(/\/+$/, '');
+  const key = $('key').value.trim();
+  if (!url || !key) { setStatus('Enter the project URL and service_role key.', true); return; }
+  store.set(LS_URL, url); store.set(LS_KEY, key);
+  setStatus('Loading…');
+  const since = sinceISO();
+  const pageSize = 1000, out = [];
+  try {
+    for (let from = 0; from < 100000; from += pageSize) {
+      const q = new URLSearchParams({ select: 'session_id,user_name,step_index,step_name,timestamp,completed', order: 'timestamp.asc' });
+      if (since) q.set('timestamp', 'gte.' + since);
+      const res = await fetch(`${url}/rest/v1/onboarding_analytics?${q}`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}`, Range: `${from}-${from + pageSize - 1}`, 'Range-Unit': 'items' },
+      });
+      if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+      const page = await res.json();
+      out.push(...page);
+      if (page.length < pageSize) break;
+    }
+  } catch (e) {
+    setStatus('Could not load events: ' + e.message, true);
+    return;
+  }
+  events = out; mode = 'live';
+  setStatus(`Loaded ${out.length.toLocaleString()} events.`);
+  $('connectDetails').open = false;
+  render();
+}
+
+// Deterministic sample data so the panel can be previewed without a key.
+function demoEvents() {
+  let seed = 42;
+  const rnd = () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
+  const names = ['Ava', 'Liam', 'Mia', 'Noah', 'Zoe', 'Ethan', 'Isla', 'Leo', 'Ruby', 'Oscar', 'Chloe', 'Max', 'Ella', 'Jack', 'Lily', 'Finn', 'Grace', 'Theo', 'Nina', 'Sam'];
+  const exitAt = { 0: .1, 1: .07, 2: .04, 11: .08, 13: .03, 15: .03, 17: .07 };
+  const out = [];
+  const days = Number($('range').value) || 90;
+  for (let s = 0; s < 420; s++) {
+    const sid = 'demo-' + s;
+    let t = Date.now() - rnd() * days * 864e5;
+    const name = names[Math.floor(rnd() * names.length)];
+    let last = 0;
+    for (let i = 0; i <= PAYWALL_INDEX; i++) {
+      out.push({ session_id: sid, user_name: i > 11 ? name : null, step_index: i, step_name: STEPS[i], timestamp: new Date(t).toISOString(), completed: false });
+      last = i;
+      t += (4 + rnd() * 25) * 1000;
+      if (rnd() < (exitAt[i] ?? .015)) break;
+      if (i === 17 && rnd() < .35) { // skipped the paywall from the plan screen
+        out.push({ session_id: sid, user_name: name, step_index: FINISHED_INDEX, step_name: 'Finished Without Purchase', timestamp: new Date(t).toISOString(), completed: true });
+        last = -1; break;
+      }
+    }
+    if (last === PAYWALL_INDEX) {
+      const r = rnd();
+      const idx = r < .16 ? CONVERTED_INDEX : r < .7 ? FINISHED_INDEX : null;
+      if (idx) out.push({ session_id: sid, user_name: name, step_index: idx, step_name: idx === CONVERTED_INDEX ? 'Paywall Converted' : 'Finished Without Purchase', timestamp: new Date(t + 20000).toISOString(), completed: true });
+    }
+  }
+  return out.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+
+function sessions() {
+  const since = sinceISO();
+  const map = new Map();
+  for (const e of events) {
+    if (since && e.timestamp < since) continue;
+    let s = map.get(e.session_id);
+    if (!s) map.set(e.session_id, s = { id: e.session_id, name: null, first: e.timestamp, last: e.timestamp, lastStep: e.step_name, lastIndex: e.step_index, maxStep: -1, converted: false, finished: false });
+    if (e.user_name) s.name = e.user_name;
+    if (e.timestamp < s.first) s.first = e.timestamp;
+    if (e.timestamp >= s.last) { s.last = e.timestamp; s.lastStep = e.step_name; s.lastIndex = e.step_index; }
+    if (e.step_index <= PAYWALL_INDEX) s.maxStep = Math.max(s.maxStep, e.step_index);
+    if (e.step_index === CONVERTED_INDEX) { s.converted = true; s.maxStep = Math.max(s.maxStep, PAYWALL_INDEX); }
+    if (e.step_index === FINISHED_INDEX) s.finished = true;
+  }
+  return [...map.values()];
+}
+
+const pct = (n, d) => (d ? (n / d) * 100 : 0);
+const fmtPct = (v) => (v >= 10 || v === 0 ? v.toFixed(0) : v.toFixed(1)) + '%';
+function fmtDur(ms) {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60), r = s % 60;
+  return m < 60 ? `${m}m ${String(r).padStart(2, '0')}s` : `${Math.floor(m / 60)}h ${m % 60}m`;
+}
+const fmtWhen = (iso) => new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function render() {
+  const all = sessions();
+  const started = all.length;
+  const reached = STEPS.map((_, i) => all.filter((s) => s.maxStep >= i).length);
+  const converted = all.filter((s) => s.converted).length;
+  const durations = all.filter((s) => s.maxStep >= PAYWALL_INDEX || s.finished || s.converted).map((s) => new Date(s.last) - new Date(s.first)).sort((a, b) => a - b);
+  const median = durations.length ? durations[Math.floor(durations.length / 2)] : 0;
+
+  $('kpis').innerHTML = [
+    ['Started onboarding', started.toLocaleString(), mode === 'demo' ? 'Demo data' : ''],
+    ['Reached paywall', reached[PAYWALL_INDEX].toLocaleString(), fmtPct(pct(reached[PAYWALL_INDEX], started)) + ' of started'],
+    ['Converted', converted.toLocaleString(), fmtPct(pct(converted, reached[PAYWALL_INDEX])) + ' of paywall views'],
+    ['Overall conversion', fmtPct(pct(converted, started)), 'Converted ÷ started'],
+    ['Median time to finish', durations.length ? fmtDur(median) : '–', 'Runs that reached the end'],
+  ].map(([l, v, n]) => `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="note">${n}</div></div>`).join('');
+
+  // Funnel: 19 steps + converted
+  const cols = STEPS.map((name, i) => ({ i, name, n: reached[i] })).concat([{ i: CONVERTED_INDEX, name: 'Converted', n: converted, conv: true }]);
+  const maxDrop = Math.max(0, ...cols.slice(1).map((c, k) => pct(cols[k].n - c.n, cols[k].n)));
+  $('funnel').innerHTML = cols.map((c, k) => {
+    const share = pct(c.n, started);
+    const prev = k ? cols[k - 1].n : null;
+    const drop = prev ? pct(prev - c.n, prev) : null;
+    const dropPill = k < cols.length - 1 ? (() => {
+      const next = cols[k + 1];
+      const d = pct(c.n - next.n, c.n);
+      if (!c.n) return '';
+      return `<span class="drop${d > 0 && d === maxDrop ? ' big' : ''}">−${fmtPct(d)}</span>`;
+    })() : '';
+    return `<div class="step${c.conv ? ' converted' : ''}${stepFilter === c.i ? ' active' : ''}" tabindex="0" role="button"
+        data-i="${c.i}" data-name="${esc(c.name)}" data-n="${c.n}" data-share="${share}" data-drop="${drop ?? ''}" data-prev="${prev ?? ''}"
+        aria-label="${esc(c.name)}: ${c.n} users, ${fmtPct(share)} of started">
+      <div class="bar-area"><div class="bar" style="height:${Math.max(share, c.n ? 1.5 : 0)}%"></div>${dropPill}</div>
+      <div class="pct">${fmtPct(share)}</div>
+      <div class="track">${c.n ? '<span class="fill"></span>' : ''}<span class="dot"></span></div>
+      <div class="count">${c.n.toLocaleString()}</div>
+      <div class="name">${esc(shy(c.name))}</div>
+    </div>`;
+  }).join('');
+
+  // Table
+  let rows = all;
+  if (stepFilter !== null) {
+    rows = stepFilter === CONVERTED_INDEX ? all.filter((s) => s.converted) : all.filter((s) => s.maxStep === stepFilter && !s.converted && !s.finished);
+  }
+  rows = rows.sort((a, b) => b.last.localeCompare(a.last));
+  const total = rows.length;
+  rows = rows.slice(0, tableLimit);
+  $('tableSub').textContent = stepFilter === null ? `Latest onboarding runs, ${Math.min(tableLimit, total)} of ${total.toLocaleString()}.`
+    : stepFilter === CONVERTED_INDEX ? 'Runs that converted on the paywall.'
+    : `Runs that stopped at “${STEPS[stepFilter]}”.`;
+  $('filterRow').innerHTML = stepFilter === null ? '' : `<span class="chip">Filtered: ${esc(stepFilter === CONVERTED_INDEX ? 'Converted' : STEPS[stepFilter])}<button id="clearFilter" aria-label="Clear filter">×</button></span>`;
+  if ($('clearFilter')) $('clearFilter').onclick = () => { stepFilter = null; render(); };
+
+  $('rows').innerHTML = rows.length ? rows.map((s) => {
+    const progress = pct(Math.max(s.maxStep, 0) + 1, STEPS.length);
+    const badge = s.converted ? '<span class="badge yes">Converted</span>'
+      : s.finished ? '<span class="badge fin">Skipped paywall</span>'
+      : s.maxStep >= PAYWALL_INDEX ? '<span class="badge no">Left at paywall</span>'
+      : '<span class="badge no">Dropped off</span>';
+    return `<tr>
+      <td>${s.name ? esc(s.name) : '<span class="muted">No name yet</span>'}</td>
+      <td><span class="mini"><span style="width:${progress}%"></span></span>${esc(s.lastStep)}</td>
+      <td class="num">${fmtDur(new Date(s.last) - new Date(s.first))}</td>
+      <td>${badge}</td>
+      <td class="num muted">${fmtWhen(s.first)}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" class="empty">${events.length ? 'No runs match.' : 'No data yet. Connect or load demo data.'}</td></tr>`;
+  $('more').style.display = total > tableLimit ? '' : 'none';
+}
+
+// Tooltip + click-to-filter on funnel steps
+const tip = $('tip');
+$('funnel').addEventListener('mousemove', (ev) => {
+  const el = ev.target.closest('.step');
+  if (!el) { tip.style.display = 'none'; return; }
+  const d = el.dataset;
+  const lines = [`<b>${d.name}</b>` + `${Number(d.n).toLocaleString()} users <span class="t2">· ${fmtPct(Number(d.share))} of started</span>`];
+  if (d.drop !== '') lines.push(`<span class="t2">Drop-off from previous: ${fmtPct(Number(d.drop))} (${(Number(d.prev) - Number(d.n)).toLocaleString()} users)</span>`);
+  tip.innerHTML = lines.join('<br>');
+  tip.style.display = 'block';
+  const x = Math.min(ev.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + 'px';
+  tip.style.top = (ev.clientY + 14) + 'px';
+});
+$('funnel').addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+function pickStep(el) {
+  const i = Number(el.dataset.i);
+  stepFilter = stepFilter === i ? null : i;
+  tableLimit = 25;
+  render();
+}
+$('funnel').addEventListener('click', (ev) => { const el = ev.target.closest('.step'); if (el) pickStep(el); });
+$('funnel').addEventListener('keydown', (ev) => {
+  const el = ev.target.closest('.step');
+  if (el && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); pickStep(el); }
+});
+
+$('connectBtn').onclick = fetchLive;
+$('refresh').onclick = () => (mode === 'demo' ? loadDemo() : fetchLive());
+$('range').onchange = () => (mode === 'live' ? fetchLive() : mode === 'demo' ? loadDemo() : render());
+$('forgetBtn').onclick = () => { store.del(LS_KEY); $('key').value = ''; setStatus('Key removed from this browser.'); };
+function loadDemo() { events = demoEvents(); mode = 'demo'; setStatus('Showing generated demo data, not real users.'); render(); }
+$('demoBtn').onclick = loadDemo;
+$('more').onclick = () => { tableLimit += 25; render(); };
+
+$('url').value = store.get(LS_URL);
+$('key').value = store.get(LS_KEY);
+render();
+if ($('url').value && $('key').value) fetchLive();
+</script>
+</body>
+</html>

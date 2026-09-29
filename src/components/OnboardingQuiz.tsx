@@ -27,6 +27,12 @@ import KeyMilestonesScreen from './KeyMilestonesScreen';
 import CommitmentScreen from './CommitmentScreen';
 import PersonalizedPlanScreen from './PersonalizedPlanScreen';
 import NaylProUpgradeScreen from './NaylProUpgradeScreen';
+import {
+  logOnboardingStep,
+  ONBOARDING_STEP_NAMES,
+  ONBOARDING_FINISHED_STEP,
+  ONBOARDING_CONVERTED_STEP,
+} from '../services/onboardingAnalytics';
 
 const { width, height } = Dimensions.get('window');
 
@@ -335,6 +341,12 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
     });
   }, [currentPage, totalScreens, showUpgradeScreen]);
 
+  // Funnel analytics: one event per step reached (paywall-only mode is not onboarding)
+  useEffect(() => {
+    if (paywallOnly) return;
+    logOnboardingStep(ONBOARDING_STEP_NAMES[currentPage] ?? `Step ${currentPage}`, currentPage, userName);
+  }, [currentPage]);
+
   // Handle visibility changes for embedded components
   useEffect(() => {
     // Force re-render of welcome page when it becomes visible again
@@ -441,6 +453,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
   };
 
   const handleComplete = () => {
+    if (!paywallOnly) logOnboardingStep(ONBOARDING_FINISHED_STEP.name, ONBOARDING_FINISHED_STEP.index, userName, true);
     onComplete(userName.trim());
   };
 
@@ -450,6 +463,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
   };
 
   const handleUnlockPro = () => {
+    if (!paywallOnly) logOnboardingStep(ONBOARDING_CONVERTED_STEP.name, ONBOARDING_CONVERTED_STEP.index, userName, true);
     onComplete(userName.trim());
   };
 
