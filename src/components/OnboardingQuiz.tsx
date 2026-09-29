@@ -7,6 +7,7 @@ import {
   Dimensions,
   Image,
   TextInput,
+  Keyboard,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import PagerView from 'react-native-pager-view';
@@ -579,7 +580,8 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
         style={styles.pager}
         initialPage={paywallOnly ? PAYWALL_PAGE_INDEX : 0}
         onPageSelected={onPageSelected}
-        scrollEnabled={!isTransitioning && !paywallOnly}
+        // Swiping is off on the name page so it only advances via Continue.
+        scrollEnabled={!isTransitioning && !paywallOnly && currentPage !== nameInputPageIndex}
         pageMargin={0}
         overdrag={false}
         overScrollMode="never"
@@ -984,11 +986,8 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
                 autoCapitalize="words"
                 autoCorrect={false}
                 returnKeyType="done"
-                onSubmitEditing={() => {
-                  if (userName.trim()) {
-                    goToNext();
-                  }
-                }}
+                blurOnSubmit
+                onSubmitEditing={() => Keyboard.dismiss()}
               />
             </View>
 

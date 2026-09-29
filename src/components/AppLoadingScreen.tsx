@@ -19,6 +19,9 @@ interface AppLoadingScreenProps {
 
 const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ bootReady, onFinish }) => {
   const overlayOpacity = useSharedValue(1);
+  // Native launch screen is plain black, so ease the brand in from black
+  // rather than popping it onto the screen.
+  const contentOpacity = useSharedValue(0);
 
   const stars = useMemo(
     () =>
@@ -33,11 +36,15 @@ const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ bootReady, onFinish
   );
 
   useEffect(() => {
+    contentOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.quad) });
+  }, [contentOpacity]);
+
+  useEffect(() => {
     if (!bootReady) return;
 
     overlayOpacity.value = withTiming(
       0,
-      { duration: 300, easing: Easing.out(Easing.ease) },
+      { duration: 450, easing: Easing.inOut(Easing.quad) },
       (finished) => {
         if (finished) {
           runOnJS(onFinish)();
@@ -50,11 +57,15 @@ const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ bootReady, onFinish
     opacity: overlayOpacity.value,
   }));
 
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacity.value,
+  }));
+
   return (
     <Animated.View style={[styles.container, overlayStyle]} pointerEvents={bootReady ? 'none' : 'auto'}>
       <StatusBar style="light" />
 
-      <View style={styles.starfield} pointerEvents="none">
+      <Animated.View style={[styles.starfield, contentStyle]} pointerEvents="none">
         {stars.map((star) => (
           <View
             key={star.id}
@@ -70,16 +81,16 @@ const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ bootReady, onFinish
             }}
           />
         ))}
-      </View>
+      </Animated.View>
 
-      <View style={styles.centerWrap} pointerEvents="none">
+      <Animated.View style={[styles.centerWrap, contentStyle]} pointerEvents="none">
         <Text style={styles.brandTitle}>Nayl</Text>
         <Image
           source={require('../../assets/cosmic-nail-nobg.webp')}
           style={styles.logoImage}
           resizeMode="contain"
         />
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 };
