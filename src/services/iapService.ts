@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import sessionService from './sessionService';
+import { paywallLog, describeError } from './paywallLog';
 
 export type IAPPackage = import('react-native-purchases').PurchasesPackage;
 type PurchasesOffering = import('react-native-purchases').PurchasesOffering;
@@ -46,9 +47,9 @@ export function isPurchasesEnabled(): boolean {
   return hasIosKey();
 }
 
-const ENTITLEMENT_ID = 'default';
+// The RevenueCat entitlement that unlocks the app. Nothing else counts as access.
+export const PRO_ENTITLEMENT_ID = 'pro';
 const SUBSCRIPTION_STATUS_BASE = '@nayl_is_pro';
-const PRODUCT_ID_PREFIX = 'nayl_pro';
 
 async function getSubscriptionStorageKey(): Promise<string> {
   const hasUser = await sessionService.hasUser();
@@ -59,22 +60,26 @@ async function getSubscriptionStorageKey(): Promise<string> {
 }
 
 function hasProAccess(customerInfo: CustomerInfo): boolean {
-  const activeEntitlements = customerInfo.entitlements.active;
+  return customerInfo.entitlements.active[PRO_ENTITLEMENT_ID]?.isActive === true;
+}
 
-  if (activeEntitlements[ENTITLEMENT_ID]?.isActive) {
-    return true;
-  }
-
-  if (Object.values(activeEntitlements).some((e) => e.isActive)) {
-    return true;
-  }
-
-  const activeSubs = customerInfo.activeSubscriptions ?? [];
-  if (activeSubs.some((id) => id.toLowerCase().includes(PRODUCT_ID_PREFIX))) {
-    return true;
-  }
-
-  return false;
+/** What the paywall logs about a CustomerInfo: enough to see why access was (not) granted. */
+function describeCustomerInfo(customerInfo: CustomerInfo): Record<string, unknown> {
+  const pro = customerInfo.entitlements.active[PRO_ENTITLEMENT_ID];
+  return {
+    appUserId: customerInfo.originalAppUserId,
+    activeEntitlements: Object.keys(customerInfo.entitlements.active),
+    activeSubscriptions: customerInfo.activeSubscriptions,
+    pro: pro
+      ? {
+          productId: pro.productIdentifier,
+          periodType: pro.periodType,
+          isSandbox: pro.isSandbox,
+          expires: pro.expirationDate,
+          willRenew: pro.willRenew,
+        }
+      : null,
+  };
 }
 
 class IAPService {
@@ -89,6 +94,7 @@ class IAPService {
 
     const Purchases = getPurchasesModule()?.default;
     if (!Purchases) {
+      paywallLog('RevenueCat module unavailable', { expoGo: isExpoGo() });
       if (__DEV__ && isExpoGo()) {
         console.warn('RevenueCat is unavailable in Expo Go. Email login still works for UI testing.');
       }
@@ -96,6 +102,7 @@ class IAPService {
     }
 
     if (!isPurchasesEnabled()) {
+      paywallLog('RevenueCat disabled: no API key for this platform', { platform: Platform.OS });
       if (__DEV__) {
         console.warn(
           Platform.OS === 'android'
@@ -116,7 +123,9 @@ class IAPService {
       }
       Purchases.configure({ apiKey });
       this.initialized = true;
+      paywallLog('RevenueCat configured', { platform: Platform.OS });
     } catch (error) {
+      paywallLog('RevenueCat configure FAILED', describeError(error));
       console.error('RevenueCat initialization error:', error);
     }
   }
@@ -133,7 +142,9 @@ class IAPService {
     }
 
     const userId = await sessionService.getCurrentUserId();
-    await Purchases.logIn(userId);
+    if ((await Purchases.getAppUserID()) !== userId) {
+      await Purchases.logIn(userId);
+    }
   }
 
   async identifyUser(userId: string): Promise<void> {
@@ -184,13 +195,31 @@ class IAPService {
   async getOfferings(): Promise<PurchasesOffering | null> {
     try {
       await this.ensurePurchaseReady();
-      if (!this.initialized) return null;
+      if (!this.initialized) {
+        paywallLog('offerings: RevenueCat not initialised');
+        return null;
+      }
       const Purchases = getPurchasesModule()?.default;
       if (!Purchases) return null;
       const offerings = await Purchases.getOfferings();
+      if (!offerings.current) {
+        paywallLog('offerings: no current offering', { all: Object.keys(offerings.all) });
+      } else {
+        paywallLog('offerings: loaded', {
+          offering: offerings.current.identifier,
+          packages: offerings.current.availablePackages.map((p) => ({
+            id: p.identifier,
+            product: p.product.identifier,
+            price: p.product.priceString,
+            intro: p.product.introPrice
+              ? `${p.product.introPrice.priceString} for ${p.product.introPrice.periodNumberOfUnits} ${p.product.introPrice.periodUnit}`
+              : null,
+          })),
+        });
+      }
       return offerings.current;
     } catch (error) {
-      console.error('Error fetching offerings:', error);
+      paywallLog('offerings: load FAILED', describeError(error));
       return null;
     }
   }
@@ -209,8 +238,10 @@ class IAPService {
         throw new Error('Purchases are not configured.');
       }
 
+      paywallLog('purchase: start', { product: pkg.product.identifier });
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       let isPro = hasProAccess(customerInfo);
+      paywallLog('purchase: store returned', { isPro, ...describeCustomerInfo(customerInfo) });
 
       if (!isPro) {
         const synced = await this.syncCustomerInfo();
@@ -219,18 +250,18 @@ class IAPService {
         }
       }
 
-      if (__DEV__) {
-        console.log('[IAP] Purchase entitlements:', Object.keys(customerInfo.entitlements.active));
-        console.log('[IAP] Active subscriptions:', customerInfo.activeSubscriptions);
-        console.log('[IAP] isPro:', isPro);
-      }
+      paywallLog(isPro ? 'purchase: SUCCESS, pro active' : "purchase: completed but no 'pro' entitlement", {
+        product: pkg.product.identifier,
+      });
 
       await this.cacheProStatus(isPro);
       return { success: isPro, customerInfo };
     } catch (error: any) {
       if (error.userCancelled) {
+        paywallLog('purchase: cancelled by user', { product: pkg.product.identifier });
         return { success: false, userCancelled: true };
       }
+      paywallLog('purchase: ERROR', { product: pkg.product.identifier, ...describeError(error) });
 
       const { PURCHASES_ERROR_CODE } = getPurchasesModule() ?? {};
       const alreadyOwned =
@@ -240,6 +271,7 @@ class IAPService {
       if (alreadyOwned || error.message?.toLowerCase().includes('already')) {
         const synced = await this.syncCustomerInfo();
         if (synced && hasProAccess(synced)) {
+          paywallLog('purchase: already owned, pro active after sync', describeCustomerInfo(synced));
           await this.cacheProStatus(true);
           return { success: true, customerInfo: synced };
         }
@@ -247,6 +279,7 @@ class IAPService {
 
       const synced = await this.syncCustomerInfo();
       if (synced && hasProAccess(synced)) {
+        paywallLog('purchase: errored but pro active after sync', describeCustomerInfo(synced));
         await this.cacheProStatus(true);
         return { success: true, customerInfo: synced };
       }
@@ -264,42 +297,75 @@ class IAPService {
       }
       const Purchases = getPurchasesModule()?.default;
       if (!Purchases) return { success: false };
+      paywallLog('restore: start');
       const customerInfo = await Purchases.restorePurchases();
       const isPro = hasProAccess(customerInfo);
+      paywallLog('restore: result', { isPro, ...describeCustomerInfo(customerInfo) });
       await this.cacheProStatus(isPro);
       return { success: isPro, customerInfo };
     } catch (error) {
-      console.error('Restore purchases error:', error);
+      paywallLog('restore: ERROR', describeError(error));
       return { success: false };
     }
   }
 
+  /**
+   * True only when RevenueCat reports an active 'pro' entitlement. Never reads the
+   * AsyncStorage cache when purchases are enabled, so stale state can't unlock the app.
+   * Offline, the RevenueCat SDK answers from its own on-device CustomerInfo cache.
+   */
   async isProUser(): Promise<boolean> {
-    try {
-      await this.ensurePurchaseReady();
-
-      if (!this.initialized) {
-        const storageKey = await getSubscriptionStorageKey();
-        const cached = await AsyncStorage.getItem(storageKey);
-        if (cached !== null) return JSON.parse(cached);
+    if (!isPurchasesEnabled()) {
+      try {
+        const cached = await AsyncStorage.getItem(await getSubscriptionStorageKey());
+        return cached !== null && JSON.parse(cached) === true;
+      } catch {
         return false;
       }
+    }
 
+    try {
+      await this.ensurePurchaseReady();
+    } catch (error) {
+      // logIn can fail offline; the SDK keeps the last identified user.
+      paywallLog('entitlement check: logIn failed, using SDK identity', describeError(error));
+    }
+    if (!this.initialized) {
+      paywallLog('entitlement check: RevenueCat not initialised -> NO access');
+      return false;
+    }
+
+    try {
       const Purchases = getPurchasesModule()?.default;
       if (!Purchases) return false;
       const customerInfo = await Purchases.getCustomerInfo();
       const isPro = hasProAccess(customerInfo);
+      paywallLog(`entitlement check: pro ${isPro ? 'ACTIVE' : 'not active'}`, describeCustomerInfo(customerInfo));
       await this.cacheProStatus(isPro);
       return isPro;
     } catch (error) {
-      try {
-        const storageKey = await getSubscriptionStorageKey();
-        const cached = await AsyncStorage.getItem(storageKey);
-        if (cached !== null) return JSON.parse(cached);
-      } catch {
-        // fall through
-      }
+      paywallLog('entitlement check: getCustomerInfo FAILED -> NO access', describeError(error));
       return false;
+    }
+  }
+
+  /**
+   * Whether this user can still get the weekly plan's free trial. Unknown counts as
+   * eligible; only an explicit "ineligible" / "no offer" answer hides the trial.
+   */
+  async isEligibleForIntroOffer(productId: string): Promise<boolean> {
+    try {
+      const Purchases = getPurchasesModule()?.default;
+      if (!this.initialized || !Purchases) return true;
+      const result = await Purchases.checkTrialOrIntroductoryPriceEligibility([productId]);
+      const status = result[productId]?.status;
+      const { INTRO_ELIGIBILITY_STATUS } = Purchases;
+      return (
+        status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_INELIGIBLE &&
+        status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_NO_INTRO_OFFER_EXISTS
+      );
+    } catch {
+      return true;
     }
   }
 }

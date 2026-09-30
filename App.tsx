@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, Platform, TouchableOpacity, Text } from 'react-native';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,7 +62,15 @@ import sessionService from './src/services/sessionService';
 const Tab = createBottomTabNavigator();
 const navigationRef = createNavigationContainerRef<any>();
 
-const ONBOARDING_ROUTES = new Set(['Onboarding', 'Login', 'OnboardingQuestionnaire', 'NaylProPaywall']);
+// Dark base theme so nothing light shows through while the first screen paints.
+const NAV_THEME = {
+  ...DarkTheme,
+  colors: { ...DarkTheme.colors, background: '#000000', card: '#000000' },
+};
+
+// 'Home' with no nested route yet = HomeStack is still running the paywall check,
+// so no tabs (Profile/Library) are reachable before it decides.
+const ONBOARDING_ROUTES = new Set(['Home', 'Onboarding', 'Login', 'OnboardingQuestionnaire', 'NaylProPaywall']);
 
 function getActiveRouteName(state: { routes: { name: string; state?: unknown }[]; index: number } | undefined): string | undefined {
   if (!state?.routes?.length || state.index == null) return undefined;
@@ -91,7 +99,7 @@ const ICON_FILL_ACTIVE = '#C1FF72';
 const ICON_FILL_INACTIVE = '#94A3B8';
 
 // Main app content with theme awareness
-function AppContent() {
+function AppContent({ onReady }: { onReady?: () => void }) {
   const { colors } = useTheme();
   const { isPanicModalVisible } = usePanicModal();
   const { isMeditationActive } = useMeditation();
@@ -121,7 +129,11 @@ function AppContent() {
     <>
     <NavigationContainer
       ref={navigationRef}
-      onReady={() => syncTabBarVisibility()}
+      theme={NAV_THEME}
+      onReady={() => {
+        syncTabBarVisibility();
+        onReady?.();
+      }}
       onStateChange={(state) => syncTabBarVisibility(state ?? undefined)}
     >
       <Tab.Navigator
@@ -389,13 +401,28 @@ function AppContent() {
 }
 
 // Theme-aware app content component
-function ThemeAwareAppContent() {
-  return <AppContent />;
+function ThemeAwareAppContent({ onReady }: { onReady?: () => void }) {
+  return <AppContent onReady={onReady} />;
 }
 
 export default function App() {
   const [bootReady, setBootReady] = useState(false);
   const [showSplashOverlay, setShowSplashOverlay] = useState(true);
+  // Only fade the splash out once the navigator has mounted and painted,
+  // otherwise the fade reveals a half-rendered first screen.
+  const [contentReady, setContentReady] = useState(false);
+
+  const handleNavigationReady = useCallback(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => setContentReady(true)));
+  }, []);
+
+  useEffect(() => {
+    if (!bootReady) return;
+    const fallback = setTimeout(() => setContentReady(true), 2000);
+    return () => clearTimeout(fallback);
+  }, [bootReady]);
+
+  const handleSplashFinish = useCallback(() => setShowSplashOverlay(false), []);
 
   useEffect(() => {
     SplashScreen.hideAsync().catch(() => {});
@@ -429,7 +456,7 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <View style={styles.root}>
       {bootReady && (
         <SafeAreaProvider>
           <ThemeProvider>
@@ -439,7 +466,7 @@ export default function App() {
                   <MeditationProvider>
                     <ColorProvider>
                       <AchievementProvider>
-                        <ThemeAwareAppContent />
+                        <ThemeAwareAppContent onReady={handleNavigationReady} />
                       </AchievementProvider>
                     </ColorProvider>
                   </MeditationProvider>
@@ -453,16 +480,20 @@ export default function App() {
       {showSplashOverlay && (
         <View style={styles.splashHost}>
           <AppLoadingScreen
-            bootReady={bootReady}
-            onFinish={() => setShowSplashOverlay(false)}
+            bootReady={bootReady && contentReady}
+            onFinish={handleSplashFinish}
           />
         </View>
       )}
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
   splashHost: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 9999,

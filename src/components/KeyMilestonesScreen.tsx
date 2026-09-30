@@ -170,6 +170,14 @@ const KeyMilestonesScreen: React.FC<KeyMilestonesScreenProps> = ({ onContinue })
     { x: graphWidth, y: graphHeight - graphPadding - 150 }, // Final improvement
   ];
 
+  // Checkmarks sit on these curve points (orange ~1-2 weeks, green 30 days, blue 90 days).
+  const MARKER_SIZE = 32;
+  const milestonePoints = [curvePoints[1], curvePoints[2], curvePoints[4]];
+  const markerPosition = (point: { x: number; y: number }) => ({
+    left: point.x - MARKER_SIZE / 2,
+    top: point.y - MARKER_SIZE / 2,
+  });
+
   // Create SVG path for the improvement curve
   const createCurvePath = () => {
     if (curvePoints.length < 2) return '';
@@ -354,7 +362,7 @@ const KeyMilestonesScreen: React.FC<KeyMilestonesScreenProps> = ({ onContinue })
          </Animated.View>
 
          {/* Animated Graph */}
-        <Animated.View style={[styles.graphContainer, graphStyle]}>
+        <Animated.View style={[styles.graphContainer, { width: graphWidth, height: graphHeight }, graphStyle]}>
           <Svg width={graphWidth} height={graphHeight} style={styles.graph}>
             {/* Enhanced Grid lines */}
             <G stroke="rgba(255, 255, 255, 0.15)" strokeWidth="1">
@@ -396,25 +404,24 @@ const KeyMilestonesScreen: React.FC<KeyMilestonesScreenProps> = ({ onContinue })
               opacity={1}
             />
             
-            {/* Enhanced Milestone markers with premium styling - labels removed for cleaner chart */}
-            <Animated.View style={[styles.milestoneContainer, milestone1Style]}>
-              <View style={[styles.milestoneMarker, { left: graphWidth * 0.2 - 16, top: graphHeight - graphPadding - 60 - 16 }]}>
-                <MilestoneCheckmark color="#F97316" size={32} />
-              </View>
-            </Animated.View>
-
-            <Animated.View style={[styles.milestoneContainer, milestone2Style]}>
-              <View style={[styles.milestoneMarker, { left: graphWidth * 0.4 - 16, top: graphHeight - graphPadding - 100 - 16 }]}>
-                <MilestoneCheckmark color="#10B981" size={32} />
-              </View>
-            </Animated.View>
-
-            <Animated.View style={[styles.milestoneContainer, milestone3Style]}>
-              <View style={[styles.milestoneMarker, { left: graphWidth * 0.8 - 16, top: graphHeight - graphPadding - 140 - 16 }]}>
-                <MilestoneCheckmark color="#3B82F6" size={32} />
-              </View>
-            </Animated.View>
           </Svg>
+
+          {/* Milestone markers sit in a View overlay on top of the Svg: RN Views
+              rendered inside <Svg> aren't laid out in chart coordinates, which
+              pushed the checkmarks below the chart. */}
+          <View style={styles.milestoneOverlay} pointerEvents="none">
+            <Animated.View style={[styles.milestoneMarker, markerPosition(milestonePoints[0]), milestone1Style]}>
+              <MilestoneCheckmark color="#F97316" size={MARKER_SIZE} />
+            </Animated.View>
+
+            <Animated.View style={[styles.milestoneMarker, markerPosition(milestonePoints[1]), milestone2Style]}>
+              <MilestoneCheckmark color="#10B981" size={MARKER_SIZE} />
+            </Animated.View>
+
+            <Animated.View style={[styles.milestoneMarker, markerPosition(milestonePoints[2]), milestone3Style]}>
+              <MilestoneCheckmark color="#3B82F6" size={MARKER_SIZE} />
+            </Animated.View>
+          </View>
         </Animated.View>
 
         {/* Milestones List */}
@@ -509,6 +516,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   graphContainer: {
+    position: 'relative',
+    alignSelf: 'center',
     alignItems: 'center',
     marginBottom: 60,
   },
@@ -523,9 +532,12 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 8,
   },
-  milestoneContainer: {
+  milestoneOverlay: {
     position: 'absolute',
-    alignItems: 'center',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   milestoneMarker: {
     position: 'absolute',

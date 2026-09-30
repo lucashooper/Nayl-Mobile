@@ -41,6 +41,8 @@ import authService, { AuthSignInResult } from '../services/authService';
 import sessionService from '../services/sessionService';
 
 import iapService from '../services/iapService';
+import { hasAppAccess } from '../services/accessGate';
+import { paywallLog } from '../services/paywallLog';
 
 import marketingDemoService from '../services/marketingDemoService';
 import { preloadUserSessionData } from '../utils/assetPreloader';
@@ -91,6 +93,7 @@ const LoginScreen: React.FC = () => {
     await preloadUserSessionData();
 
     if (await marketingDemoService.isDemoAccount()) {
+      paywallLog('navigate into app: login, demo account -> HomeMain');
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -100,7 +103,9 @@ const LoginScreen: React.FC = () => {
       return;
     }
 
-    if (!iapService.isPurchasesEnabled()) {
+    // Keyless builds only let dev / Android sideloads through (see hasAppAccess).
+    if (!iapService.isPurchasesEnabled() && (await hasAppAccess('login, keyless build'))) {
+      paywallLog('navigate into app: login, keyless build -> HomeMain');
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -144,6 +149,7 @@ const LoginScreen: React.FC = () => {
 
     if (hasSubscription) {
 
+      paywallLog('navigate into app: login, subscription found -> HomeMain');
       navigation.dispatch(
 
         CommonActions.reset({

@@ -34,13 +34,15 @@ import StreakOverlay from '../components/StreakOverlay';
 import { usePanicModal } from '../context/PanicModalContext';
 import { useTipsModal } from '../context/TipsModalContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import triggerService from '../services/triggerService';
 import sessionService, { USER_SESSION_CHANGED } from '../services/sessionService';
 import profileService from '../services/profileService';
 import { shouldShowWelcome, markWelcomeShown } from '../services/welcomeService';
 import marketingDemoService from '../services/marketingDemoService';
 import WelcomeModal from '../components/WelcomeModal';
+import { hasAppAccess } from '../services/accessGate';
+import { paywallLog } from '../services/paywallLog';
 import ProfileHeader from '../components/ProfileHeader';
 import { typography, body, bodySmall, caption, buttonText, timerText, timerLabel } from '../constants/typography';
 import { UserDashboard } from '../lib/supabase';
@@ -76,6 +78,31 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const orbScale = useRef(new Animated.Value(1)).current;
   const claimablePulse = useRef(new Animated.Value(1)).current;
   const insets = useSafeAreaInsets();
+
+  // Hard paywall: without an active subscription, send the user back to the plans.
+  const sendToPaywall = useCallback(() => {
+    paywallLog('home -> paywall (no access)');
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Onboarding', params: { paywallOnly: true, forceDisplay: true } }],
+      }),
+    );
+  }, [navigation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      hasAppAccess('home screen focus')
+        .then((allowed) => {
+          if (!cancelled && !allowed) sendToPaywall();
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }, [sendToPaywall]),
+  );
   
   // Streak state from context
   const { elapsedSeconds, refreshStreakData, setElapsedSecondsDirectly } = useStreak();
@@ -985,6 +1012,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         visible={showWelcome}
         userName={welcomeName}
         onContinue={async () => {
+          if (!(await hasAppAccess('welcome Let\'s begin'))) {
+            setShowWelcome(false);
+            sendToPaywall();
+            return;
+          }
           await markWelcomeShown();
           setShowWelcome(false);
         }}
