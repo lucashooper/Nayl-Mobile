@@ -68,7 +68,9 @@ const NAV_THEME = {
   colors: { ...DarkTheme.colors, background: '#000000', card: '#000000' },
 };
 
-const ONBOARDING_ROUTES = new Set(['Onboarding', 'Login', 'OnboardingQuestionnaire', 'NaylProPaywall']);
+// 'Home' with no nested route yet = HomeStack is still running the paywall check,
+// so no tabs (Profile/Library) are reachable before it decides.
+const ONBOARDING_ROUTES = new Set(['Home', 'Onboarding', 'Login', 'OnboardingQuestionnaire', 'NaylProPaywall']);
 
 function getActiveRouteName(state: { routes: { name: string; state?: unknown }[]; index: number } | undefined): string | undefined {
   if (!state?.routes?.length || state.index == null) return undefined;

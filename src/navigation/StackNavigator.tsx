@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createStackNavigator, CardStyleInterpolators, TransitionSpecs } from '@react-navigation/stack';
 import { Easing, View } from 'react-native';
 import sessionService from '../services/sessionService';
+import { hasAppAccess } from '../services/accessGate';
 
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
@@ -70,17 +71,32 @@ const meditationScreenOptions = {
 // Home stack with standardized transitions
 export function HomeStack() {
   const cachedHasUser = sessionService.getCachedHasUser();
-  const [initialRoute, setInitialRoute] = useState<string | null>(() => {
-    if (cachedHasUser === null) return null;
-    return cachedHasUser ? 'HomeMain' : 'Onboarding';
-  });
+  // Returning users only reach Home after the hard-paywall check; otherwise they
+  // start on the paywall.
+  const [initialRoute, setInitialRoute] = useState<string | null>(() =>
+    cachedHasUser === false ? 'Onboarding' : null,
+  );
+  const [paywallOnly, setPaywallOnly] = useState(false);
 
   useEffect(() => {
-    if (cachedHasUser !== null) return;
+    if (cachedHasUser === false) return;
+    let cancelled = false;
 
-    sessionService.hasUser().then((hasUser) => {
-      setInitialRoute(hasUser ? 'HomeMain' : 'Onboarding');
-    });
+    (async () => {
+      const hasUser = cachedHasUser ?? (await sessionService.hasUser());
+      if (!hasUser) {
+        if (!cancelled) setInitialRoute('Onboarding');
+        return;
+      }
+      const allowed = await hasAppAccess().catch(() => false);
+      if (cancelled) return;
+      setPaywallOnly(!allowed);
+      setInitialRoute(allowed ? 'HomeMain' : 'Onboarding');
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [cachedHasUser]);
 
   if (!initialRoute) {
@@ -96,6 +112,7 @@ export function HomeStack() {
       <Stack.Screen
         name="Onboarding"
         component={OnboardingScreen}
+        initialParams={paywallOnly ? { paywallOnly: true, forceDisplay: true } : undefined}
         options={{ gestureEnabled: false }}
       />
       <Stack.Screen

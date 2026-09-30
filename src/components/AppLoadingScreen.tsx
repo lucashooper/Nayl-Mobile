@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { View, Image, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import Animated, {
@@ -85,11 +85,6 @@ const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ bootReady, onFinish
 
       <Animated.View style={[styles.centerWrap, contentStyle]} pointerEvents="none">
         <Text style={styles.brandTitle}>Nayl</Text>
-        <Image
-          source={require('../../assets/cosmic-nail-nobg.webp')}
-          style={styles.logoImage}
-          resizeMode="contain"
-        />
       </Animated.View>
     </Animated.View>
   );
@@ -119,13 +114,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     letterSpacing: 0.5,
-    marginBottom: 4,
     textAlign: 'center',
-  },
-  logoImage: {
-    width: Math.min(width * 0.58, 240),
-    height: Math.min(height * 0.26, 280),
-    backgroundColor: 'transparent',
   },
 });
 

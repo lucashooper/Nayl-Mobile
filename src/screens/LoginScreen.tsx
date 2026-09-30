@@ -41,6 +41,7 @@ import authService, { AuthSignInResult } from '../services/authService';
 import sessionService from '../services/sessionService';
 
 import iapService from '../services/iapService';
+import { hasAppAccess } from '../services/accessGate';
 
 import marketingDemoService from '../services/marketingDemoService';
 import { preloadUserSessionData } from '../utils/assetPreloader';
@@ -100,7 +101,8 @@ const LoginScreen: React.FC = () => {
       return;
     }
 
-    if (!iapService.isPurchasesEnabled()) {
+    // Keyless builds only let dev / Android sideloads through (see hasAppAccess).
+    if (!iapService.isPurchasesEnabled() && (await hasAppAccess())) {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
