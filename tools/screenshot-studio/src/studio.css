@@ -1,0 +1,59 @@
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: #0c0d10; color: #e8e9ec; font: 13px/1.4 'Inter Variable', system-ui, sans-serif; }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+.studio { display: flex; height: 100%; }
+.sidebar { width: 360px; flex-shrink: 0; overflow-y: auto; background: #141519; border-right: 1px solid #23252b; padding: 18px 18px 40px; }
+.brand { padding-bottom: 14px; border-bottom: 1px solid #23252b; }
+.brand-title { font-size: 16px; font-weight: 700; }
+.brand-sub { color: #8b8f99; margin-top: 2px; }
+
+.section { padding: 16px 0; border-bottom: 1px solid #23252b; display: flex; flex-direction: column; gap: 10px; }
+.section h3 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #8b8f99; }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field > span { color: #a9adb7; font-size: 12px; }
+.hint { color: #6f737d; font-size: 12px; }
+.check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+select, input:not([type]), input.hex, textarea { width: 100%; background: #0e0f12; border: 1px solid #2a2d34; border-radius: 8px; padding: 7px 9px; outline: none; }
+select:focus, input:focus, textarea:focus { border-color: #5b8cff; }
+textarea { resize: vertical; }
+input[type='range'] { width: 100%; accent-color: #7fb2ff; }
+input[type='color'] { width: 34px; height: 30px; border: 1px solid #2a2d34; border-radius: 8px; padding: 2px; background: #0e0f12; cursor: pointer; }
+.color-row { display: flex; align-items: center; gap: 6px; }
+.color-row em { color: #6f737d; font-style: normal; font-size: 12px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1px solid #2a2d34; background: #0e0f12; cursor: pointer; font-size: 13px; }
+.chip.on { border-color: #7fb2ff; background: #16223d; }
+.dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #0006; }
+
+.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.swatch { display: flex; flex-direction: column; gap: 4px; padding: 0; border: none; background: none; cursor: pointer; text-align: left; }
+.swatch span { height: 46px; border-radius: 8px; border: 2px solid transparent; outline: 1px solid #2a2d34; }
+.swatch.on span { border-color: #7fb2ff; }
+.swatch em { font-style: normal; font-size: 11px; color: #a9adb7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.panel-edit { display: flex; flex-direction: column; gap: 5px; }
+.panel-name { font-weight: 600; font-size: 12px; }
+
+button.primary { background: #f3f4f6; color: #0c0d10; border: none; border-radius: 10px; padding: 10px 22px; font-weight: 700; cursor: pointer; font-size: 14px; }
+button.primary:disabled { opacity: 0.6; cursor: progress; }
+button.ghost, .card-actions button { background: #0e0f12; border: 1px solid #2a2d34; border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+button.ghost:hover, .card-actions button:hover { border-color: #4a4f5a; }
+button.link { background: none; border: none; color: #7fb2ff; cursor: pointer; padding: 0; font-size: 12px; }
+
+.stage { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 24px; border-bottom: 1px solid #23252b; background: #111216; }
+.toolbar-title { font-weight: 600; }
+.toolbar-note { color: #8b8f99; font-size: 12px; margin-top: 2px; }
+.strip { flex: 1; overflow: auto; display: flex; gap: 22px; padding: 24px; align-items: flex-start; }
+.card { flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+.preview { position: relative; overflow: hidden; border-radius: 14px; box-shadow: 0 10px 30px #0008; outline: 1px solid #23252b; }
+.preview.over { outline: 3px dashed #7fb2ff; }
+.card-meta { width: 250px; display: flex; flex-direction: column; gap: 6px; }
+.card-title { font-weight: 600; }
+.card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
