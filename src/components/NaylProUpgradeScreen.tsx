@@ -124,28 +124,10 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
     return FALLBACK_PRICES[planId];
   };
 
-  const getWeeklyIntroTrialFinePrint = (): string | null => {
-    const intro = packages.weekly?.product?.introPrice as
-      | { price?: number; priceString?: string; periodNumberOfUnits?: number; periodUnit?: string; cycles?: number }
-      | null
-      | undefined;
-
-    if (!weeklyTrialEligible || !intro || intro.price == null || intro.price > 0) {
-      return null;
-    }
-
-    const units = intro.periodNumberOfUnits ?? intro.cycles;
-    if (units != null && intro.periodUnit) {
-      const unitLabel = intro.periodUnit.toLowerCase();
-      return `Free for ${units} ${unitLabel}${units === 1 ? '' : 's'}, then ${getPriceString('weekly')} per week.`;
-    }
-
-    return null;
-  };
-
-  // e.g. "3-Day Free Trial, then £4.99/week". Only shown when the weekly product
-  // really has a free intro offer, so the card never advertises a trial Apple won't give.
-  const getWeeklyTrialLabel = (): string | null => {
+  // The weekly plan's free trial, as App Store Connect's intro offer reports it through
+  // RevenueCat. Null when there's no free intro or this user already used it, so the UI
+  // never promises a trial Apple won't give.
+  const getWeeklyTrial = (): { days: string; label: string } | null => {
     const intro = packages.weekly?.product?.introPrice as
       | { price?: number; periodNumberOfUnits?: number; periodUnit?: string; cycles?: number }
       | null
@@ -161,20 +143,25 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
     }
 
     const unit = intro.periodUnit.charAt(0).toUpperCase() + intro.periodUnit.slice(1).toLowerCase();
-    return `${units}-${unit} Free Trial, then ${getPriceString('weekly')}/week`;
-  };
-
-  const getSelectedPlanSummary = (): { title: string; duration: string; price: string; cadence: string } => {
-    const details = PLAN_DETAILS[selectedPlan];
     return {
-      title: getPlanTitle(selectedPlan),
-      duration: details.duration,
-      price: getPriceString(selectedPlan),
-      cadence: details.cadence,
+      days: `${units}-${unit}`, // "3-Day"
+      label: `${units} ${unit}${units === 1 ? '' : 's'} Free`, // "3 Days Free"
     };
   };
 
+  const weeklyTrial = getWeeklyTrial();
+  const selectedTrial = selectedPlan === 'weekly' ? weeklyTrial : null;
+
+  // One subtle line under the button; still states the post-trial price and auto-renewal.
+  const getFootnote = (): string => {
+    const price = `${getPriceString(selectedPlan)}/${PLAN_DETAILS[selectedPlan].cadence}`;
+    return selectedTrial
+      ? `${selectedTrial.label}, then ${price}. Auto-renews, cancel anytime in Apple ID Settings.`
+      : `${price}. Auto-renews, cancel anytime in Apple ID Settings.`;
+  };
+
   const getPrimaryButtonLabel = (): string => {
+    if (selectedTrial) return `Start ${selectedTrial.days} Free Trial`;
     return `Subscribe for ${getPriceString(selectedPlan)}`;
   };
 
@@ -462,14 +449,18 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 onPress={() => setSelectedPlan('weekly')}
                 activeOpacity={0.8}
               >
-                <View style={styles.popularTag}>
-                  <Text style={styles.popularTagText}>most popular</Text>
+                <View style={[styles.popularTag, weeklyTrial && styles.trialTag]}>
+                  <Text style={styles.popularTagText}>{weeklyTrial ? 'free trial' : 'most popular'}</Text>
                 </View>
                 <Text style={styles.purchaseOptionTitle}>{getPlanTitle('weekly')}</Text>
                 <Text style={styles.purchaseOptionPrice}>{getPriceString('weekly')}</Text>
-                <Text style={styles.purchaseOptionCadence} numberOfLines={3}>
-                  {getWeeklyTrialLabel() ?? 'per week'}
-                </Text>
+                {weeklyTrial ? (
+                  <Text style={[styles.purchaseOptionCadence, styles.trialCadence]} numberOfLines={2}>
+                    {weeklyTrial.label}, then {getPriceString('weekly')}/wk
+                  </Text>
+                ) : (
+                  <Text style={styles.purchaseOptionCadence}>per week</Text>
+                )}
               </TouchableOpacity>
 
               {/* Yearly Option */}
@@ -495,8 +486,6 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.cancelAnytime}>No commitment — cancel anytime.</Text>
-
             {/* Unlock Button */}
             <TouchableOpacity
               style={[styles.unlockButton, isPurchasing && styles.unlockButtonDisabled]}
@@ -518,14 +507,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
               </LinearGradient>
             </TouchableOpacity>
 
-            <Text style={styles.subscriptionFinePrint}>
-              {getSelectedPlanSummary().title} · {getSelectedPlanSummary().duration} ·{' '}
-              {getSelectedPlanSummary().price} per {getSelectedPlanSummary().cadence}.
-              {selectedPlan === 'weekly' && getWeeklyIntroTrialFinePrint()
-                ? ` ${getWeeklyIntroTrialFinePrint()}`
-                : ' '}
-              Auto-renews until cancelled in Apple ID Settings.
-            </Text>
+            <Text style={styles.subscriptionFinePrint}>{getFootnote()}</Text>
 
             {/* Footer Links */}
             <View style={styles.footerLinks}>
@@ -550,7 +532,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
             </View>
 
             {/* Only in dev builds without RevenueCat (Expo Go), where nothing can be bought. */}
-            {isDevPaywallBypassAvailable() && (
+            {__DEV__ && isDevPaywallBypassAvailable() && (
               <TouchableOpacity
                 style={styles.devBypassButton}
                 onPress={() => {
@@ -581,8 +563,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'space-between',
-    paddingTop: 80,
-    paddingBottom: 40,
+    paddingTop: 64,
+    paddingBottom: 16,
     zIndex: 10,
   },
   headerSection: {
@@ -616,8 +598,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   iconGlowContainer: {
-    width: 120,
-    height: 120,
+    width: 96,
+    height: 96,
     borderRadius: 32,
     backgroundColor: 'rgba(124, 58, 237, 0.06)',
     justifyContent: 'center',
@@ -630,9 +612,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   appIcon: {
-    width: 104,
-    height: 104,
-    borderRadius: 26,
+    width: 84,
+    height: 84,
+    borderRadius: 22,
   },
   purchaseSection: {
     zIndex: 10,
@@ -641,7 +623,8 @@ const styles = StyleSheet.create({
   purchaseOverlay: {
     backgroundColor: '#000000',
     borderRadius: 20,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     width: width,
     alignItems: 'center',
     alignSelf: 'center',
@@ -661,7 +644,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 12,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   buttonGradient: {
     flex: 1,
@@ -679,7 +662,7 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 16,
     gap: 4,
   },
   purchaseOption: {
@@ -721,6 +704,13 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     minWidth: 60,
   },
+  trialTag: {
+    backgroundColor: '#10B981',
+  },
+  trialCadence: {
+    color: '#6EE7B7',
+    fontWeight: '600',
+  },
   popularTagText: {
     fontSize: 8,
     fontWeight: '700',
@@ -751,22 +741,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 2,
   },
-  cancelAnytime: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#94A3B8',
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 4,
-  },
   subscriptionFinePrint: {
     fontSize: 11,
     fontWeight: '400',
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 15,
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: 2,
     paddingHorizontal: 8,
   },
   unlockButtonDisabled: {
@@ -791,7 +772,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 8,
     paddingHorizontal: 8,
     flexWrap: 'wrap',
     gap: 2,
@@ -811,7 +792,7 @@ const styles = StyleSheet.create({
   featuresSection: {
     alignItems: 'center',
     zIndex: 10,
-    marginBottom: 40,
+    marginBottom: 20,
     paddingHorizontal: 24,
   },
   featuresScrollContainer: {
@@ -829,7 +810,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
-    minHeight: 160,
+    minHeight: 132,
     marginRight: 16,
   },
   featureCardHeader: {
