@@ -128,6 +128,12 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
   // RevenueCat. Null when there's no free intro or this user already used it, so the UI
   // never promises a trial Apple won't give.
   const getWeeklyTrial = (): { days: string; label: string } | null => {
+    // Before products load (and in Expo Go, where they never do) show the 3-day trial
+    // configured in App Store Connect. Once RevenueCat answers, its data decides.
+    if (!packages.weekly) {
+      return { days: '3-Day', label: '3 Days Free' };
+    }
+
     const intro = packages.weekly?.product?.introPrice as
       | { price?: number; periodNumberOfUnits?: number; periodUnit?: string; cycles?: number }
       | null
@@ -355,7 +361,20 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
       <View style={styles.content}>
         {/* Header Section */}
         <Animated.View style={[styles.headerSection, headerStyle]}>
-          <Text style={styles.mainHeadline}>
+          {/* Dev-only escape hatch for Expo Go (no RevenueCat): long-press the title.
+              Nothing is rendered for it, and it does nothing outside __DEV__. */}
+          <Text
+            style={styles.mainHeadline}
+            onLongPress={
+              __DEV__ && isDevPaywallBypassAvailable()
+                ? () => {
+                    grantDevPaywallBypass();
+                    paywallLog('navigate into app: DEV long-press bypass');
+                    onUnlockPro();
+                  }
+                : undefined
+            }
+          >
             Unlock Nayl Pro
           </Text>
           <Text style={styles.subHeadline}>
@@ -531,21 +550,6 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Only in dev builds without RevenueCat (Expo Go), where nothing can be bought. */}
-            {__DEV__ && isDevPaywallBypassAvailable() && (
-              <TouchableOpacity
-                style={styles.devBypassButton}
-                onPress={() => {
-                  grantDevPaywallBypass();
-                  paywallLog('navigate into app: DEV bypass button');
-                  onUnlockPro();
-                }}
-              >
-                <Text style={styles.devBypassText}>
-                  DEV ONLY (Expo Go, no RevenueCat): continue without purchase
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
         </Animated.View>
       </View>
@@ -752,21 +756,6 @@ const styles = StyleSheet.create({
   },
   unlockButtonDisabled: {
     opacity: 0.7,
-  },
-  devBypassButton: {
-    marginTop: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FACC15',
-    alignSelf: 'center',
-  },
-  devBypassText: {
-    color: '#FACC15',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
   },
   footerLinks: {
     flexDirection: 'row',
