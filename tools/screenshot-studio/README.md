@@ -44,7 +44,7 @@ Settings are saved in the browser (localStorage).
 
 The five device screens are HTML rebuilds of the app's screens, using the app's own colours,
 Inter font and full-resolution artwork straight from `assets/` (flame, panic-button icons,
-mountain, sound icons, achievement badges, and the demo nail photos in `progress-photo-examples/`). They use sample data (a 14-day streak, "James"),
+mountain, sound icons, achievement badges). They use sample data (a 14-day streak, "James"),
 not simulator captures.
 
 The home-screen orb (`src/screens/NaylOrb.jsx`) is a direct port of the production orb:
@@ -52,6 +52,13 @@ The home-screen orb (`src/screens/NaylOrb.jsx`) is a direct port of the producti
 and opacities) with the `ProgressRing` that `HomeScreen.tsx` renders inside it (Ocean Blue
 gradient on the lime track) and the `SHADOWS.orbGlow` glow. In the app the layers rotate; the
 studio shows the frame where every rotation is 0deg.
+
+Frame 5's four Nail Progress photos are empty until you add them: use the "Nail Progress photos"
+section in the sidebar, or save `day-1.jpg`, `day-5.jpg`, `day-9.jpg` and `day-14.jpg` in
+`nail-photos/` and note their source and licence in `nail-photos/CREDITS.md`.
+
+Frame 3's Analytics ring is the native 360pt ring, scaled up about its centre (1.18× by
+default, adjustable in the sidebar) so it pops out over the phone.
 
 To use a real capture instead, click **Use real capture** under a frame (or drop an image on it).
 Raw @3x simulator PNGs (1179 × 2556 from an iPhone 16 Pro, 1320 × 2868 from a Pro Max) are used

@@ -57,3 +57,9 @@ button.link { background: none; border: none; color: #7fb2ff; cursor: pointer; p
 .card-meta { width: 250px; display: flex; flex-direction: column; gap: 6px; }
 .card-title { font-weight: 600; }
 .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.nail-row { display: flex; align-items: center; gap: 10px; }
+.nail-thumb { width: 40px; height: 40px; border-radius: 8px; overflow: hidden; background: #0e0f12; border: 1px solid #2a2d34; display: flex; align-items: center; justify-content: center; color: #6f737d; flex-shrink: 0; }
+.nail-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.nail-label { flex: 1; font-weight: 600; display: flex; flex-direction: column; }
+.nail-label em { font-style: normal; font-weight: 400; font-size: 11px; color: #6f737d; }

@@ -7,6 +7,16 @@ const STORE_KEY = 'nayl-screenshot-studio-v1';
 const IMAGE_KEY = (id) => `nayl-screenshot-studio-img-${id}`;
 const PREVIEW_W = 250;
 
+// Nail Progress photos dropped into tools/screenshot-studio/nail-photos/ as
+// day-1.jpg, day-5.jpg, day-9.jpg, day-14.jpg (png/webp too) are picked up automatically.
+const FOLDER_PHOTOS = Object.fromEntries(
+  Object.entries(import.meta.glob('../nail-photos/day-*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}', { eager: true, query: '?url', import: 'default' }))
+    .map(([file, url]) => [Number(/day-(\d+)\./i.exec(file)?.[1]), url])
+    .filter(([day]) => day),
+);
+const NAIL_TILE_DAYS = [1, 5, 9, 14];
+const nailKey = (day) => `nail-day-${day}`;
+
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
@@ -19,7 +29,7 @@ function load() {
 
 function loadImages() {
   const out = {};
-  for (const f of DEFAULT_STATE.frames) {
+  for (const f of [...DEFAULT_STATE.frames, ...NAIL_TILE_DAYS.map((d) => ({ id: nailKey(d) }))]) {
     try {
       const v = localStorage.getItem(IMAGE_KEY(f.id));
       if (v) out[f.id] = v;
@@ -50,6 +60,7 @@ export default function App() {
   const set = (patch) => setState((s) => ({ ...s, ...patch }));
   const setFrame = (i, patch) => setState((s) => ({ ...s, frames: s.frames.map((f, j) => (j === i ? { ...f, ...patch } : f)) }));
   const theme = resolveTheme(state);
+  const photos = Object.fromEntries(NAIL_TILE_DAYS.map((d) => [d, images[nailKey(d)] || FOLDER_PHOTOS[d] || null]));
 
   const setImage = (id, dataUrl) => {
     setImages((m) => {
@@ -181,6 +192,26 @@ export default function App() {
           </Field>
         </Section>
 
+        <Section title="Frame 3 ring pop-out">
+          <Field label={`Analytics ring scale · ${state.ringPopScale.toFixed(2)}×`}>
+            <input type="range" min="1" max="1.4" step="0.01" value={state.ringPopScale} onChange={(e) => set({ ringPopScale: +e.target.value })} />
+          </Field>
+        </Section>
+
+        <Section title="Nail Progress photos">
+          {NAIL_TILE_DAYS.map((day) => (
+            <NailPhotoRow
+              key={day}
+              day={day}
+              src={photos[day]}
+              fromFolder={!images[nailKey(day)] && !!FOLDER_PHOTOS[day]}
+              onFile={(file) => onFile(nailKey(day), file)}
+              onClear={images[nailKey(day)] ? () => setImage(nailKey(day), null) : null}
+            />
+          ))}
+          <div className="hint">Or save them as day-1.jpg, day-5.jpg, day-9.jpg and day-14.jpg in tools/screenshot-studio/nail-photos/.</div>
+        </Section>
+
         <Section title="Canvas padding">
           <Field label={`Top padding (canvas top to title) · ${state.topPadding}px`}>
             <input type="range" min="60" max="600" step="5" value={state.topPadding} onChange={(e) => set({ topPadding: +e.target.value })} />
@@ -230,6 +261,7 @@ export default function App() {
               if (!confirm('Reset all text, colours and uploaded screens to the defaults?')) return;
               setState(DEFAULT_STATE);
               DEFAULT_STATE.frames.forEach((f) => setImage(f.id, null));
+              NAIL_TILE_DAYS.forEach((d) => setImage(nailKey(d), null));
             }}
           >
             Reset everything to defaults
@@ -256,6 +288,7 @@ export default function App() {
               frame={f}
               state={state}
               image={images[f.id]}
+              photos={photos}
               nodeRef={(el) => (nodes.current[i] = el)}
               onFile={(file) => onFile(f.id, file)}
               onClearImage={() => setImage(f.id, null)}
@@ -270,7 +303,7 @@ export default function App() {
   );
 }
 
-function FrameCard({ index, frame, state, image, nodeRef, onFile, onClearImage, onScreen, onDownload, busy }) {
+function FrameCard({ index, frame, state, image, photos, nodeRef, onFile, onClearImage, onScreen, onDownload, busy }) {
   const [over, setOver] = useState(false);
   const scale = PREVIEW_W / CANVAS.width;
   const input = useRef(null);
@@ -291,7 +324,7 @@ function FrameCard({ index, frame, state, image, nodeRef, onFile, onClearImage, 
         }}
       >
         <div style={{ transform: `scale(${scale})`, transformOrigin: '0 0' }}>
-          <Frame ref={nodeRef} state={state} frame={frame} image={image} />
+          <Frame ref={nodeRef} state={state} frame={frame} image={image} photos={photos} />
         </div>
       </div>
       <div className="card-meta">
@@ -394,6 +427,28 @@ function Hex({ label, value, onChange }) {
           }}
         />
       </div>
+    </div>
+  );
+}
+
+function NailPhotoRow({ day, src, fromFolder, onFile, onClear }) {
+  const input = useRef(null);
+  return (
+    <div className="nail-row">
+      <div className="nail-thumb">{src ? <img src={src} alt="" /> : <span>+</span>}</div>
+      <div className="nail-label">
+        Day {day}
+        <em>{src ? (fromFolder ? 'from nail-photos/' : 'uploaded') : 'empty'}</em>
+      </div>
+      <button className="ghost" onClick={() => input.current.click()}>
+        {src ? 'Replace' : 'Add photo'}
+      </button>
+      {onClear && (
+        <button className="link" onClick={onClear}>
+          Clear
+        </button>
+      )}
+      <input ref={input} type="file" accept="image/*" hidden onChange={(e) => onFile(e.target.files[0])} />
     </div>
   );
 }

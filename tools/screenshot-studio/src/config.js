@@ -62,6 +62,7 @@ export const DEFAULT_STATE = {
   shadow: true,
   glow: true,
   showCallouts: true,
+  ringPopScale: 1.18, // Frame 3: how much the native Analytics ring is enlarged over the phone
   phoneScale: 100, // % of a 1000px-wide iPhone frame
   topPadding: 190, // canvas top to headline
   bottomPadding: 110, // phone bottom to canvas bottom (negative lets the phone bleed off)

@@ -19,12 +19,6 @@ import rooted from '@app-assets/bigger-achievement-icons/Deeply-Rooted-280px.png
 import blossom from '@app-assets/bigger-achievement-icons/Blossom-280px.png';
 import oak from '@app-assets/bigger-achievement-icons/Da-Oak-280px.png';
 import landmark from '@app-assets/bigger-achievement-icons/Landmark-280px.png';
-// The same demo photos the app seeds for marketing accounts (src/services/marketingDemoService.ts):
-// pic-1 is day 1, pic-2 day 5, pic-3 day 9, pic-4 day 14.
-import nail1 from '@app-assets/progress-photo-examples/pic-1.webp';
-import nail2 from '@app-assets/progress-photo-examples/pic-2.webp';
-import nail3 from '@app-assets/progress-photo-examples/pic-3.webp';
-import nail4 from '@app-assets/progress-photo-examples/pic-4.webp';
 
 // Floating call-out cards, Cal AI style: a wide card that overhangs the phone
 // slightly on both sides. Content is laid out in points (like the screens) and
@@ -104,8 +98,11 @@ function HomeScreen() {
       </div>
       <div style={{ position: 'absolute', top: 372, left: 0, right: 0, textAlign: 'center' }}>
         <div style={{ fontSize: 14, fontWeight: 500, color: C.muted }}>You've been nail-biting free for:</div>
-        <div style={{ fontSize: 42, fontWeight: 900, marginTop: 6, textShadow: '0 2px 4px rgba(0,0,0,0.4), 0 0 18px rgba(193,255,114,0.18)' }}>14 days</div>
-        <div style={{ display: 'inline-block', marginTop: 8, padding: '8px 16px', borderRadius: 18, background: 'rgba(20,26,48,0.75)', border: `0.5px solid ${C.hairline}`, fontSize: 16, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>6hr 42m 18s</div>
+        <div style={{ fontSize: 42, fontWeight: 900, lineHeight: '48px', marginTop: 6, fontVariantNumeric: 'tabular-nums', textShadow: '0 2px 4px rgba(0,0,0,0.4), 0 0 18px rgba(193,255,114,0.18)' }}>
+          14 Days 6hrs
+          <br />
+          42m 18s
+        </div>
       </div>
       <div style={{ position: 'absolute', top: 508, left: 32, right: 32, display: 'flex', justifyContent: 'space-between' }}>
         <ActionButton icon="create" label="Streak" />
@@ -127,21 +124,6 @@ function HomeScreen() {
       </div>
       <TabBar active="home" />
     </Page>
-  );
-}
-
-function HomeCallout({ phone, shadow }) {
-  // Sits over the in-app timer block, leaving the orb above it visible.
-  return (
-    <Callout phone={phone} top={356} width={300}>
-      <Card phone={phone} shadow={shadow} style={{ padding: '12px 22px 14px', textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 8 }}>
-          <span style={{ fontSize: 46, fontWeight: 900, lineHeight: 1 }}>14</span>
-          <span style={{ fontSize: 22, fontWeight: 700, color: C.secondary }}>days bite-free</span>
-        </div>
-        <div style={{ display: 'inline-block', marginTop: 10, padding: '5px 16px', borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: `0.5px solid ${C.hairline}`, fontSize: 16, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>6hr 42m 18s</div>
-      </Card>
-    </Callout>
   );
 }
 
@@ -207,24 +189,27 @@ function PanicCallout({ phone, shadow }) {
 
 /* ---------------------------------------------------------------- Progress */
 
-function RecoveryRing({ id, size = 300 }) {
-  const k = size / 300;
+// AnalyticsScreen.tsx: AnimatedProgressRing size 360, stroke 16, with the
+// RECOVERY / % / DAY STREAK / target text stacked in the middle.
+const RING_PT = 360;
+const RING_TOP = 136;
+
+function RecoveryRing({ id }) {
   return (
-    <div style={{ position: 'relative', width: size, height: size }}>
-      <Ring id={id} size={size} stroke={16 * k} value={0.23} />
+    <div style={{ position: 'relative', width: RING_PT, height: RING_PT }}>
+      <Ring id={id} size={RING_PT} stroke={16} value={0.23} />
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-        <div style={{ fontSize: 14 * k, fontWeight: 600, letterSpacing: 1.2 * k, color: C.secondary }}>RECOVERY</div>
-        <div style={{ fontSize: 56 * k, fontWeight: 900, lineHeight: 1.1, textShadow: `0 0 ${16 * k}px rgba(193,255,114,0.15)` }}>23%</div>
-        <div style={{ fontSize: 18 * k, fontWeight: 600, letterSpacing: 0.5 * k, color: C.secondary }}>14 DAY STREAK</div>
-        <div style={{ fontSize: 12 * k, color: C.muted, marginTop: 6 * k, width: 180 * k }}>Progress to 60 days (Brain Rewiring)</div>
+        <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: 1.2, color: C.secondary }}>RECOVERY</div>
+        <div style={{ fontSize: 56, fontWeight: 900, lineHeight: 1.1, textShadow: '0 0 16px rgba(193,255,114,0.15)' }}>23%</div>
+        <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: 0.5, color: C.secondary }}>14 DAY STREAK</div>
+        <div style={{ fontSize: 14, color: C.muted, marginTop: 6, width: 220 }}>Progress to 60 days (Brain Rewiring)</div>
       </div>
     </div>
   );
 }
 
-const RING_TOP = 128;
-
-function ProgressScreen() {
+// `popped`: the ring is drawn enlarged by ProgressCallout, so leave its slot empty here.
+function ProgressScreen({ popped }) {
   return (
     <Page>
       <div style={{ position: 'absolute', top: 62, left: 20, right: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -232,38 +217,46 @@ function ProgressScreen() {
         <span style={{ fontSize: 30, fontWeight: 700 }}>Analytics</span>
         <Icon name="share" size={26} width={1.8} />
       </div>
-      <div style={{ position: 'absolute', top: RING_TOP, left: '50%', marginLeft: -150 }}>
+      <div style={{ position: 'absolute', top: RING_TOP, left: (393 - RING_PT) / 2, visibility: popped ? 'hidden' : 'visible' }}>
         <RecoveryRing id="recovery" />
       </div>
-      <div style={{ position: 'absolute', top: 458, left: 24, right: 24, textAlign: 'center' }}>
+      <div style={{ position: 'absolute', top: RING_TOP + RING_PT + 40, left: 24, right: 24, textAlign: 'center' }}>
         <div style={{ fontSize: 17, fontWeight: 500, color: C.secondary }}>You're on track to quit nail biting by:</div>
         <div style={{ display: 'inline-block', marginTop: 12, padding: '14px 24px', borderRadius: 16, background: C.card, border: `1px solid ${C.cardBorder}`, fontSize: 22, fontWeight: 600 }}>Nov 29, 2026</div>
         <div style={{ marginTop: 18, padding: '18px 20px', borderRadius: 16, background: C.card, border: `1px solid ${C.cardBorder}`, fontSize: 16, fontWeight: 500, lineHeight: 1.45 }}>
           The first few days are always the hardest, but you've already shown incredible strength. Hold on to your reasons for starting this journey.
         </div>
       </div>
-      <div style={{ position: 'absolute', top: 756, left: 24, right: 24, height: 1, background: C.cardBorder }} />
       <TabBar active="progress" />
     </Page>
   );
 }
 
-// The recovery ring itself pops out: a larger copy on a glass disc, centred on the
-// in-app ring.
-function ProgressCallout({ phone, shadow }) {
-  const disc = 256; // points, before the call-out scale
-  const scale = CALLOUT_SCALE * (phone.width / 1000);
-  const ringCentre = RING_TOP + 150; // screen points
-  const top = ringCentre - (disc * scale) / phone.scale / 2;
+// Cal AI-style pop-out: the unchanged native ring section, scaled up about its own
+// centre so it grows out over the phone.
+export const RING_POP_SCALE = 1.18;
+
+function ProgressCallout({ phone, shadow, popScale = RING_POP_SCALE }) {
+  const scale = phone.scale * popScale;
+  const centreX = phone.x + phone.inset + (393 / 2) * phone.scale;
+  const centreY = phone.y + phone.inset + (RING_TOP + RING_PT / 2) * phone.scale;
   return (
-    <Callout phone={phone} top={top} width={disc}>
-      <div style={{ position: 'relative', width: disc, height: disc, borderRadius: '50%', filter: shadowFor(phone, shadow) || 'none' }}>
-        <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 35%, #2c2048, #120c20 70%)', border: '1px solid rgba(255,255,255,0.16)' }} />
-        <div style={{ position: 'absolute', inset: 18 }}>
-          <RecoveryRing id="recovery-pop" size={disc - 36} />
-        </div>
-      </div>
-    </Callout>
+    <div
+      style={{
+        position: 'absolute',
+        left: centreX - (RING_PT * scale) / 2,
+        top: centreY - (RING_PT * scale) / 2,
+        width: RING_PT,
+        height: RING_PT,
+        transform: `scale(${scale})`,
+        transformOrigin: '0 0',
+        fontFamily: APP_FONT,
+        color: '#fff',
+        filter: shadow ? `drop-shadow(0 ${20 / scale}px ${20 / scale}px rgba(0,0,0,0.5))` : 'none',
+      }}
+    >
+      <RecoveryRing id="recovery-pop" />
+    </div>
   );
 }
 
@@ -446,14 +439,23 @@ function MilestonesCallout({ phone, shadow }) {
 // (PHOTO_SIZE = (width - 72) / 2, radius 12, "Day N" + date on a dark fade) and the
 // Camera / Gallery buttons pinned to the bottom.
 
-const NAIL_PHOTOS = [
-  [nail4, 14, 'Jul 20, 2026'],
-  [nail3, 9, 'Jul 15, 2026'],
-  [nail2, 5, 'Jul 11, 2026'],
-  [nail1, 1, 'Jul 7, 2026'],
+export const NAIL_DAYS = [
+  [14, 'Jul 20, 2026'],
+  [9, 'Jul 15, 2026'],
+  [5, 'Jul 11, 2026'],
+  [1, 'Jul 7, 2026'],
 ];
 
-function NailsScreen() {
+// Empty tile, styled like the app's photoCard background, until a photo is added.
+function PhotoPlaceholder({ size = 26 }) {
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(160deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03))' }}>
+      <Icon name="camera" size={size} color="rgba(255,255,255,0.35)" width={1.6} />
+    </div>
+  );
+}
+
+function NailsScreen({ photos = {} }) {
   const photo = (393 - 72) / 2;
   return (
     <Page>
@@ -478,9 +480,9 @@ function NailsScreen() {
         ))}
       </div>
       <div style={{ position: 'absolute', top: 276, left: 24, right: 24, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        {NAIL_PHOTOS.map(([src, day, date]) => (
+        {NAIL_DAYS.map(([day, date]) => (
           <div key={day} style={{ position: 'relative', width: photo, height: photo, borderRadius: 12, overflow: 'hidden', marginBottom: 16, background: 'rgba(255,255,255,0.05)' }}>
-            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            {photos[day] ? <img src={photos[day]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : <PhotoPlaceholder />}
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 8, paddingTop: 22, background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.8))', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <span style={{ fontSize: 16, fontWeight: 700 }}>Day {day}</span>
               <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{date}</span>
@@ -501,14 +503,16 @@ function NailsScreen() {
   );
 }
 
-function NailsCallout({ phone, shadow }) {
+function NailsCallout({ phone, shadow, photos = {} }) {
   return (
     <Callout phone={phone} top={660}>
       <Card phone={phone} shadow={shadow} style={{ padding: '16px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ display: 'flex' }}>
-            {[nail1, nail4].map((src, i) => (
-              <img key={i} src={src} alt="" style={{ width: 52, height: 52, borderRadius: 12, objectFit: 'cover', border: '2px solid #1c1430', marginLeft: i ? -14 : 0 }} />
+            {[1, 14].map((day, i) => (
+              <div key={day} style={{ width: 52, height: 52, borderRadius: 12, overflow: 'hidden', border: '2px solid #1c1430', marginLeft: i ? -14 : 0, background: '#241a3a' }}>
+                {photos[day] ? <img src={photos[day]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : <PhotoPlaceholder size={20} />}
+              </div>
             ))}
           </div>
           <div style={{ flex: 1 }}>
@@ -522,7 +526,7 @@ function NailsCallout({ phone, shadow }) {
 }
 
 export const SCREEN_COMPONENTS = {
-  home: { Screen: HomeScreen, Callout: HomeCallout },
+  home: { Screen: HomeScreen },
   panic: { Screen: PanicScreen, Callout: PanicCallout },
   progress: { Screen: ProgressScreen, Callout: ProgressCallout },
   library: { Screen: LibraryScreen, Callout: LibraryCallout },

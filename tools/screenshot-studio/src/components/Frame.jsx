@@ -32,7 +32,7 @@ function isDark(hex) {
   return lum < 140;
 }
 
-const Frame = forwardRef(function Frame({ state, frame, image }, ref) {
+const Frame = forwardRef(function Frame({ state, frame, image, photos }, ref) {
   const t = resolveTheme(state);
   const texture = state.texture;
   const strength = state.textureStrength / 100;
@@ -89,12 +89,12 @@ const Frame = forwardRef(function Frame({ state, frame, image }, ref) {
           {image ? (
             <img src={image} alt="" style={{ width: SCREEN_PT.width, height: SCREEN_PT.height, objectFit: 'cover', display: 'block' }} />
           ) : (
-            Screen && <Screen.Screen />
+            Screen && <Screen.Screen popped={state.showCallouts && !!Screen.Callout} photos={photos} />
           )}
         </Device>
       </div>
 
-      {state.showCallouts && !image && Screen?.Callout && <Screen.Callout phone={phone} shadow={state.shadow} />}
+      {state.showCallouts && !image && Screen?.Callout && <Screen.Callout phone={phone} shadow={state.shadow} photos={photos} popScale={state.ringPopScale} />}
     </div>
   );
 });
