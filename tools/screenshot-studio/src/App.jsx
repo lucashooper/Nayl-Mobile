@@ -11,6 +11,8 @@ function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
     if (saved?.version === DEFAULT_STATE.version) return { ...DEFAULT_STATE, ...saved };
+    // New studio version: keep the look (fonts, colours, layout) but take the new frames.
+    if (saved && saved.version >= 2) return { ...DEFAULT_STATE, ...saved, version: DEFAULT_STATE.version, frames: DEFAULT_STATE.frames };
   } catch {}
   return DEFAULT_STATE;
 }

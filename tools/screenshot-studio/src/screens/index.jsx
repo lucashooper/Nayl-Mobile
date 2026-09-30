@@ -1,5 +1,6 @@
 import { C, APP_FONT, Page, TabBar, Icon, Ring, WeekRow, PanicPill } from './kit.jsx';
 import NaylOrb from './NaylOrb.jsx';
+import Squircle from './Squircle.jsx';
 import flameIcon from '@app-assets/new-flame-icon.webp';
 import trophyIcon from '@app-assets/trophy-icon.webp';
 import enamelIcon from '@app-assets/panic-button-icons/damaged-enamel-icon.webp';
@@ -18,14 +19,29 @@ import rooted from '@app-assets/bigger-achievement-icons/Deeply-Rooted-280px.png
 import blossom from '@app-assets/bigger-achievement-icons/Blossom-280px.png';
 import oak from '@app-assets/bigger-achievement-icons/Da-Oak-280px.png';
 import landmark from '@app-assets/bigger-achievement-icons/Landmark-280px.png';
+// The same demo photos the app seeds for marketing accounts (src/services/marketingDemoService.ts):
+// pic-1 is day 1, pic-2 day 5, pic-3 day 9, pic-4 day 14.
+import nail1 from '@app-assets/progress-photo-examples/pic-1.webp';
+import nail2 from '@app-assets/progress-photo-examples/pic-2.webp';
+import nail3 from '@app-assets/progress-photo-examples/pic-3.webp';
+import nail4 from '@app-assets/progress-photo-examples/pic-4.webp';
 
 // Floating call-out cards, Cal AI style: a wide card that overhangs the phone
 // slightly on both sides. Content is laid out in points (like the screens) and
 // scaled up; `top` is the screen point the card's top edge lines up with.
 const CARD_PT = 340;
+const CALLOUT_SCALE = 3.2; // x phone width / 1000
+
+// Every call-out casts the same shadow in canvas pixels: 0 20px 40px rgba(0,0,0,0.5).
+// Call-outs are drawn in points and scaled, so the shadow is converted back to points.
+function shadowFor(phone, on) {
+  if (!on) return '';
+  const s = CALLOUT_SCALE * (phone.width / 1000);
+  return `drop-shadow(0 ${20 / s}px ${20 / s}px rgba(0,0,0,0.5))`; // drop-shadow blur = box-shadow blur / 2
+}
 
 function Callout({ phone, top, width = CARD_PT, children }) {
-  const scale = 3.2 * (phone.width / 1000);
+  const scale = CALLOUT_SCALE * (phone.width / 1000);
   return (
     <div
       style={{
@@ -44,12 +60,14 @@ function Callout({ phone, top, width = CARD_PT, children }) {
   );
 }
 
-const card = (shadow) => ({
-  background: 'linear-gradient(180deg, #1f1733 0%, #140e24 100%)',
-  border: '1px solid rgba(255,255,255,0.14)',
-  borderRadius: 24,
-  boxShadow: shadow ? '0 16px 36px rgba(0,0,0,0.5)' : 'none',
-});
+// Glass card with iOS continuous (squircle) corners.
+function Card({ phone, shadow, radius = 24, style, children }) {
+  return (
+    <Squircle radius={radius} fill={['#2c2048', '#160f28']} shadow={shadowFor(phone, shadow)} style={style}>
+      {children}
+    </Squircle>
+  );
+}
 
 /* ---------------------------------------------------------------- Home */
 
@@ -113,19 +131,16 @@ function HomeScreen() {
 }
 
 function HomeCallout({ phone, shadow }) {
-  // Sits over the in-app timer block (points 368-500), leaving the orb and action buttons visible.
+  // Sits over the in-app timer block, leaving the orb above it visible.
   return (
-    <Callout phone={phone} top={368}>
-      <div style={{ ...card(shadow), padding: '12px 14px 12px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span style={{ fontSize: 46, fontWeight: 900, lineHeight: 1 }}>14</span>
-            <span style={{ fontSize: 20, fontWeight: 700, color: C.secondary }}>days bite-free</span>
-          </div>
-          <div style={{ display: 'inline-block', marginTop: 8, padding: '4px 12px', borderRadius: 14, background: 'rgba(255,255,255,0.06)', border: `0.5px solid ${C.hairline}`, fontSize: 14, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>6hr 42m 18s</div>
+    <Callout phone={phone} top={356} width={300}>
+      <Card phone={phone} shadow={shadow} style={{ padding: '12px 22px 14px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 8 }}>
+          <span style={{ fontSize: 46, fontWeight: 900, lineHeight: 1 }}>14</span>
+          <span style={{ fontSize: 22, fontWeight: 700, color: C.secondary }}>days bite-free</span>
         </div>
-        <NaylOrb id="callout-orb" size={78} strokeWidth={6} glow={false} />
-      </div>
+        <div style={{ display: 'inline-block', marginTop: 10, padding: '5px 16px', borderRadius: 16, background: 'rgba(255,255,255,0.08)', border: `0.5px solid ${C.hairline}`, fontSize: 16, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>6hr 42m 18s</div>
+      </Card>
     </Callout>
   );
 }
@@ -183,7 +198,7 @@ function PanicScreen() {
 function PanicCallout({ phone, shadow }) {
   return (
     <Callout phone={phone} top={-40}>
-      <div style={{ filter: shadow ? 'drop-shadow(0 10px 22px rgba(224,46,46,0.45))' : 'none' }}>
+      <div style={{ filter: shadowFor(phone, shadow) || 'none' }}>
         <PanicPill width={CARD_PT} />
       </div>
     </Callout>
@@ -191,6 +206,23 @@ function PanicCallout({ phone, shadow }) {
 }
 
 /* ---------------------------------------------------------------- Progress */
+
+function RecoveryRing({ id, size = 300 }) {
+  const k = size / 300;
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <Ring id={id} size={size} stroke={16 * k} value={0.23} />
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div style={{ fontSize: 14 * k, fontWeight: 600, letterSpacing: 1.2 * k, color: C.secondary }}>RECOVERY</div>
+        <div style={{ fontSize: 56 * k, fontWeight: 900, lineHeight: 1.1, textShadow: `0 0 ${16 * k}px rgba(193,255,114,0.15)` }}>23%</div>
+        <div style={{ fontSize: 18 * k, fontWeight: 600, letterSpacing: 0.5 * k, color: C.secondary }}>14 DAY STREAK</div>
+        <div style={{ fontSize: 12 * k, color: C.muted, marginTop: 6 * k, width: 180 * k }}>Progress to 60 days (Brain Rewiring)</div>
+      </div>
+    </div>
+  );
+}
+
+const RING_TOP = 128;
 
 function ProgressScreen() {
   return (
@@ -200,14 +232,8 @@ function ProgressScreen() {
         <span style={{ fontSize: 30, fontWeight: 700 }}>Analytics</span>
         <Icon name="share" size={26} width={1.8} />
       </div>
-      <div style={{ position: 'absolute', top: 128, left: '50%', marginLeft: -150, width: 300, height: 300 }}>
-        <Ring id="recovery" size={300} stroke={16} value={0.23} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: 1.2, color: C.secondary }}>RECOVERY</div>
-          <div style={{ fontSize: 56, fontWeight: 900, lineHeight: 1.1, textShadow: '0 0 16px rgba(193,255,114,0.15)' }}>23%</div>
-          <div style={{ fontSize: 18, fontWeight: 600, letterSpacing: 0.5, color: C.secondary }}>14 DAY STREAK</div>
-          <div style={{ fontSize: 12, color: C.muted, marginTop: 6, width: 180 }}>Progress to 60 days (Brain Rewiring)</div>
-        </div>
+      <div style={{ position: 'absolute', top: RING_TOP, left: '50%', marginLeft: -150 }}>
+        <RecoveryRing id="recovery" />
       </div>
       <div style={{ position: 'absolute', top: 458, left: 24, right: 24, textAlign: 'center' }}>
         <div style={{ fontSize: 17, fontWeight: 500, color: C.secondary }}>You're on track to quit nail biting by:</div>
@@ -222,15 +248,20 @@ function ProgressScreen() {
   );
 }
 
+// The recovery ring itself pops out: a larger copy on a glass disc, centred on the
+// in-app ring.
 function ProgressCallout({ phone, shadow }) {
+  const disc = 256; // points, before the call-out scale
+  const scale = CALLOUT_SCALE * (phone.width / 1000);
+  const ringCentre = RING_TOP + 150; // screen points
+  const top = ringCentre - (disc * scale) / phone.scale / 2;
   return (
-    <Callout phone={phone} top={660}>
-      <div style={{ ...card(shadow), padding: '16px 20px 14px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
-          <span style={{ fontSize: 16, fontWeight: 700 }}>This week</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: C.lime }}>7 / 7 bite-free</span>
+    <Callout phone={phone} top={top} width={disc}>
+      <div style={{ position: 'relative', width: disc, height: disc, borderRadius: '50%', filter: shadowFor(phone, shadow) || 'none' }}>
+        <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'radial-gradient(circle at 50% 35%, #2c2048, #120c20 70%)', border: '1px solid rgba(255,255,255,0.16)' }} />
+        <div style={{ position: 'absolute', inset: 18 }}>
+          <RecoveryRing id="recovery-pop" size={disc - 36} />
         </div>
-        <WeekRow done={7} size={32} />
       </div>
     </Callout>
   );
@@ -295,21 +326,23 @@ function LibraryScreen() {
 function LibraryCallout({ phone, shadow }) {
   return (
     <Callout phone={phone} top={690}>
-      <div style={{ ...card(shadow), padding: 14, display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #0ea5e9, #1e3a8a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src={seaIcon} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: C.lime }}>NOW PLAYING</div>
-          <div style={{ fontSize: 18, fontWeight: 700, marginTop: 1 }}>Ocean Waves</div>
-          <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.12)', marginTop: 8, overflow: 'hidden' }}>
-            <div style={{ width: '42%', height: '100%', background: C.blue }} />
+      <Card phone={phone} shadow={shadow} style={{ padding: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #0ea5e9, #1e3a8a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src={seaIcon} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: C.lime }}>NOW PLAYING</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginTop: 1 }}>Ocean Waves</div>
+            <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.12)', marginTop: 8, overflow: 'hidden' }}>
+              <div style={{ width: '42%', height: '100%', background: C.blue }} />
+            </div>
+          </div>
+          <div style={{ width: 44, height: 44, borderRadius: 22, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="pause" size={18} color="#140e24" width={3} />
           </div>
         </div>
-        <div style={{ width: 44, height: 44, borderRadius: 22, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="pause" size={18} color="#140e24" width={3} />
-        </div>
-      </div>
+      </Card>
     </Callout>
   );
 }
@@ -394,14 +427,96 @@ function MilestonesScreen() {
 function MilestonesCallout({ phone, shadow }) {
   return (
     <Callout phone={phone} top={700}>
-      <div style={{ ...card(shadow), padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <img src={rooted} alt="" style={{ width: 64, height: 64, objectFit: 'contain' }} />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: C.lime }}>MILESTONE UNLOCKED</div>
-          <div style={{ fontSize: 20, fontWeight: 800, marginTop: 2 }}>Deeply Rooted</div>
-          <div style={{ fontSize: 13, color: C.muted, marginTop: 1 }}>30 days bite-free</div>
+      <Card phone={phone} shadow={shadow} style={{ padding: '14px 18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <img src={rooted} alt="" style={{ width: 64, height: 64, objectFit: 'contain' }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: C.lime }}>MILESTONE UNLOCKED</div>
+            <div style={{ fontSize: 20, fontWeight: 800, marginTop: 2 }}>Deeply Rooted</div>
+            <div style={{ fontSize: 13, color: C.muted, marginTop: 1 }}>30 days bite-free</div>
+          </div>
+        </div>
+      </Card>
+    </Callout>
+  );
+}
+
+/* ---------------------------------------------------------------- Nail Progress */
+// src/screens/NailProgressScreen.tsx: header, lime stats card, 2 x 2 photo grid
+// (PHOTO_SIZE = (width - 72) / 2, radius 12, "Day N" + date on a dark fade) and the
+// Camera / Gallery buttons pinned to the bottom.
+
+const NAIL_PHOTOS = [
+  [nail4, 14, 'Jul 20, 2026'],
+  [nail3, 9, 'Jul 15, 2026'],
+  [nail2, 5, 'Jul 11, 2026'],
+  [nail1, 1, 'Jul 7, 2026'],
+];
+
+function NailsScreen() {
+  const photo = (393 - 72) / 2;
+  return (
+    <Page>
+      <div style={{ position: 'absolute', top: 74, left: 24, right: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Icon name="back" size={28} />
+        <span style={{ fontSize: 36, fontWeight: 700, letterSpacing: -0.3 }}>Nail Progress</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.lime} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="6" cy="6" r="2.5" />
+          <circle cx="18" cy="18" r="2.5" />
+          <path d="M6 8.5V15a3 3 0 003 3h4M18 15.5V9a3 3 0 00-3-3h-4M13 16l-2 2 2 2M11 4l2 2-2 2" />
+        </svg>
+      </div>
+      <div style={{ position: 'absolute', top: 136, left: 24, right: 24, borderRadius: 16, padding: 24, background: 'linear-gradient(180deg, rgba(193,255,114,0.15), rgba(193,255,114,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+        {[['4', 'Photos'], ['14', 'Days Clean']].map(([v, l], i) => (
+          <div key={l} style={{ display: 'contents' }}>
+            {i > 0 && <div style={{ width: 1, height: 40, background: 'rgba(255,255,255,0.1)', opacity: 0.3 * 3 }} />}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 32, fontWeight: 700, color: C.lime, marginBottom: 4 }}>{v}</div>
+              <div style={{ fontSize: 14, color: C.secondary }}>{l}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ position: 'absolute', top: 276, left: 24, right: 24, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        {NAIL_PHOTOS.map(([src, day, date]) => (
+          <div key={day} style={{ position: 'relative', width: photo, height: photo, borderRadius: 12, overflow: 'hidden', marginBottom: 16, background: 'rgba(255,255,255,0.05)' }}>
+            <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 8, paddingTop: 22, background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.8))', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: 16, fontWeight: 700 }}>Day {day}</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{date}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ position: 'absolute', left: 24, right: 24, bottom: 54, display: 'flex', gap: 8 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 0', borderRadius: 16, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)', fontSize: 16, fontWeight: 600 }}>
+          <Icon name="camera" size={22} width={1.8} /> Camera
+        </div>
+        <div style={{ flex: 1.4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px 0', borderRadius: 16, background: 'linear-gradient(135deg, #C1FF72, #9FE855, #7DD138)', color: '#000', fontSize: 18, fontWeight: 700, boxShadow: '0 8px 16px rgba(0,0,0,0.3)' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="#000"><path d="M8 3h11a2 2 0 012 2v11a2 2 0 01-2 2H8a2 2 0 01-2-2V5a2 2 0 012-2zm1.5 11.5h8l-2.6-3.4-2 2.5-1.4-1.7-2 2.6zM11 8a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM3 7v12a2 2 0 002 2h12v-1.8H5a.2.2 0 01-.2-.2V7z" /></svg>
+          Gallery
         </div>
       </div>
+    </Page>
+  );
+}
+
+function NailsCallout({ phone, shadow }) {
+  return (
+    <Callout phone={phone} top={660}>
+      <Card phone={phone} shadow={shadow} style={{ padding: '16px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex' }}>
+            {[nail1, nail4].map((src, i) => (
+              <img key={i} src={src} alt="" style={{ width: 52, height: 52, borderRadius: 12, objectFit: 'cover', border: '2px solid #1c1430', marginLeft: i ? -14 : 0 }} />
+            ))}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 21, fontWeight: 800 }}>Visual Photo Logs</div>
+            <div style={{ fontSize: 14, color: C.muted, marginTop: 2 }}>Day 1 to Day 14, side by side</div>
+          </div>
+        </div>
+      </Card>
     </Callout>
   );
 }
@@ -412,4 +527,5 @@ export const SCREEN_COMPONENTS = {
   progress: { Screen: ProgressScreen, Callout: ProgressCallout },
   library: { Screen: LibraryScreen, Callout: LibraryCallout },
   milestones: { Screen: MilestonesScreen, Callout: MilestonesCallout },
+  nails: { Screen: NailsScreen, Callout: NailsCallout },
 };

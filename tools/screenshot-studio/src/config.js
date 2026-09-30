@@ -39,12 +39,13 @@ export const SCREENS = {
   progress: 'Recovery progress ring',
   library: 'Sound & wellness library',
   milestones: 'Milestones & analytics',
+  nails: 'Nail progress photos',
 };
 
 export const DEFAULT_EXPORT_DIR = './assets/app-store-screenshots/';
 
 export const DEFAULT_STATE = {
-  version: 2,
+  version: 3,
   font: 'modern',
   headlineWeight: 800,
   headlineSize: 136,
@@ -71,6 +72,6 @@ export const DEFAULT_STATE = {
     { id: 'panic', name: 'Panic Button', screen: 'panic', headline: 'Instant Panic Button' },
     { id: 'progress', name: 'Streak & Progress', screen: 'progress', headline: 'Track Your Streak' },
     { id: 'library', name: 'Sound & Wellness', screen: 'library', headline: 'Guided Urge Relief' },
-    { id: 'milestones', name: 'Milestones', screen: 'milestones', headline: 'Watch Your Recovery' },
+    { id: 'nail-progress', name: 'Nail Progress', screen: 'nails', headline: 'Watch Your Progress' },
   ],
 };

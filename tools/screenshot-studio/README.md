@@ -44,7 +44,7 @@ Settings are saved in the browser (localStorage).
 
 The five device screens are HTML rebuilds of the app's screens, using the app's own colours,
 Inter font and full-resolution artwork straight from `assets/` (flame, panic-button icons,
-mountain, sound icons, achievement badges). They use sample data (a 14-day streak, "James"),
+mountain, sound icons, achievement badges, and the demo nail photos in `progress-photo-examples/`). They use sample data (a 14-day streak, "James"),
 not simulator captures.
 
 The home-screen orb (`src/screens/NaylOrb.jsx`) is a direct port of the production orb:
@@ -61,7 +61,7 @@ down, never up. The floating call-out is hidden on frames that use a real captur
 
 ## Files
 
-- `src/screens/` – the device-screen mocks, the ported orb and the floating call-outs.
+- `src/screens/` – the device-screen mocks, the ported orb, the floating call-outs and `Squircle.jsx` (iOS continuous-corner cards).
 - `studio-server.js` – the dev-server endpoint that writes exports into the repo.
 - `src/components/Frame.jsx` – one 1290 × 2796 frame (background, text, device, call-out).
 - `src/components/Device.jsx` – the iPhone 16 Pro frame.
