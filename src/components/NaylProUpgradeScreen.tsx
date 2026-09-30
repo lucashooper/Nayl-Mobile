@@ -21,7 +21,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import hapticService, { HapticType, HapticIntensity } from '../services/hapticService';
 import iapService, { IAPPackage } from '../services/iapService';
-import { hasAppAccess } from '../services/accessGate';
+import { hasAppAccess, isDevPaywallBypassAvailable, grantDevPaywallBypass } from '../services/accessGate';
+import { paywallLog, describeError } from '../services/paywallLog';
 
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../constants/legalUrls';
 
@@ -67,7 +68,9 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
       try {
         // Hard paywall: only skip straight through with a verified 'pro' entitlement
         // (or a build/account that can't buy anything, see hasAppAccess).
-        if (!forceDisplay && (await hasAppAccess())) {
+        paywallLog('paywall opened', { forceDisplay });
+        if (!forceDisplay && (await hasAppAccess('paywall auto-skip on open'))) {
+          paywallLog('navigate into app: paywall auto-skipped, user already has access');
           onUnlockProRef.current();
           return;
         }
@@ -101,8 +104,9 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
             );
           }
         }
-      } catch {
-        // Offerings may fail in development; the purchase will gracefully error too
+      } catch (error) {
+        // Fails closed: without packages the subscribe button shows "Unavailable".
+        paywallLog('paywall load FAILED', describeError(error));
       }
     };
     loadOfferings();
@@ -234,6 +238,11 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
 
       const pkg = packages[selectedPlan];
       if (!pkg) {
+        paywallLog('subscribe tapped but no package loaded', {
+          plan: selectedPlan,
+          loaded: Object.keys(packages),
+          purchasesEnabled: iapService.isPurchasesEnabled(),
+        });
         Alert.alert(
           'Unavailable',
           'Subscription products are not available right now. Please try again later.',
@@ -250,13 +259,16 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
       }
 
       if (result.success) {
+        paywallLog('navigate into app: purchase succeeded', { plan: selectedPlan });
         onUnlockPro();
       } else {
         // Sandbox can charge Apple but lag on RC entitlements — try restore before failing
         const restored = await iapService.restorePurchases();
         if (restored.success) {
+          paywallLog('navigate into app: restore after purchase succeeded', { plan: selectedPlan });
           onUnlockPro();
         } else {
+          paywallLog('purchase did not grant pro; staying on paywall', { plan: selectedPlan });
           Alert.alert(
             'Purchase Failed',
             'Your purchase could not be completed. If you were charged, tap Restore Purchase below.',
@@ -264,6 +276,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
         }
       }
     } catch (error: any) {
+      paywallLog('purchase flow threw; staying on paywall', describeError(error));
       Alert.alert('Error', error?.message ?? 'An unexpected error occurred.');
     } finally {
       setIsPurchasing(false);
@@ -277,7 +290,13 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
       if (result.success) {
         await hapticService.trigger(HapticType.SUCCESS, HapticIntensity.NORMAL);
         Alert.alert('Restored!', 'Your Nayl Pro subscription has been restored.', [
-          { text: 'Continue', onPress: onUnlockPro },
+          {
+            text: 'Continue',
+            onPress: () => {
+              paywallLog('navigate into app: restore button');
+              onUnlockPro();
+            },
+          },
         ]);
       } else {
         Alert.alert('No Subscription Found', 'We could not find an active subscription to restore.');
@@ -529,6 +548,22 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 <Text style={styles.footerLink}>Privacy Policy</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Only in dev builds without RevenueCat (Expo Go), where nothing can be bought. */}
+            {isDevPaywallBypassAvailable() && (
+              <TouchableOpacity
+                style={styles.devBypassButton}
+                onPress={() => {
+                  grantDevPaywallBypass();
+                  paywallLog('navigate into app: DEV bypass button');
+                  onUnlockPro();
+                }}
+              >
+                <Text style={styles.devBypassText}>
+                  DEV ONLY (Expo Go, no RevenueCat): continue without purchase
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         </Animated.View>
       </View>
@@ -736,6 +771,21 @@ const styles = StyleSheet.create({
   },
   unlockButtonDisabled: {
     opacity: 0.7,
+  },
+  devBypassButton: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FACC15',
+    alignSelf: 'center',
+  },
+  devBypassText: {
+    color: '#FACC15',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   footerLinks: {
     flexDirection: 'row',

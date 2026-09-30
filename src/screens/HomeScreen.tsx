@@ -42,6 +42,7 @@ import { shouldShowWelcome, markWelcomeShown } from '../services/welcomeService'
 import marketingDemoService from '../services/marketingDemoService';
 import WelcomeModal from '../components/WelcomeModal';
 import { hasAppAccess } from '../services/accessGate';
+import { paywallLog } from '../services/paywallLog';
 import ProfileHeader from '../components/ProfileHeader';
 import { typography, body, bodySmall, caption, buttonText, timerText, timerLabel } from '../constants/typography';
 import { UserDashboard } from '../lib/supabase';
@@ -80,6 +81,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   // Hard paywall: without an active subscription, send the user back to the plans.
   const sendToPaywall = useCallback(() => {
+    paywallLog('home -> paywall (no access)');
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
@@ -91,7 +93,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      hasAppAccess()
+      hasAppAccess('home screen focus')
         .then((allowed) => {
           if (!cancelled && !allowed) sendToPaywall();
         })
@@ -1010,7 +1012,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         visible={showWelcome}
         userName={welcomeName}
         onContinue={async () => {
-          if (!(await hasAppAccess())) {
+          if (!(await hasAppAccess('welcome Let\'s begin'))) {
             setShowWelcome(false);
             sendToPaywall();
             return;
