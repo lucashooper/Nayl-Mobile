@@ -97,11 +97,10 @@ function HomeScreen() {
         <NaylOrb id="home-orb" />
       </div>
       <div style={{ position: 'absolute', top: 372, left: 0, right: 0, textAlign: 'center' }}>
-        <div style={{ fontSize: 14, fontWeight: 500, color: C.muted }}>You've been nail-biting free for:</div>
-        <div style={{ fontSize: 42, fontWeight: 900, lineHeight: '48px', marginTop: 6, fontVariantNumeric: 'tabular-nums', textShadow: '0 2px 4px rgba(0,0,0,0.4), 0 0 18px rgba(193,255,114,0.18)' }}>
-          14 Days 6hrs
+        <div style={{ fontSize: 42, fontWeight: 900, lineHeight: '48px', textShadow: '0 2px 4px rgba(0,0,0,0.4), 0 0 18px rgba(193,255,114,0.18)' }}>
+          14 Days
           <br />
-          42m 18s
+          Bite-Free
         </div>
       </div>
       <div style={{ position: 'absolute', top: 508, left: 32, right: 32, display: 'flex', justifyContent: 'space-between' }}>
@@ -439,11 +438,11 @@ function MilestonesCallout({ phone, shadow }) {
 // (PHOTO_SIZE = (width - 72) / 2, radius 12, "Day N" + date on a dark fade) and the
 // Camera / Gallery buttons pinned to the bottom.
 
+// Two big before/after tiles, Day 1 on top. `focus` is the object-position that keeps
+// the nails in frame when a photo is cropped to the wide tile.
 export const NAIL_DAYS = [
-  [14, 'Jul 20, 2026'],
-  [9, 'Jul 15, 2026'],
-  [5, 'Jul 11, 2026'],
-  [1, 'Jul 7, 2026'],
+  [1, 'Jul 7, 2026', '50% 50%'],
+  [14, 'Jul 20, 2026', '50% 42%'],
 ];
 
 // Empty tile, styled like the app's photoCard background, until a photo is added.
@@ -456,7 +455,6 @@ function PhotoPlaceholder({ size = 26 }) {
 }
 
 function NailsScreen({ photos = {} }) {
-  const photo = (393 - 72) / 2;
   return (
     <Page>
       <div style={{ position: 'absolute', top: 74, left: 24, right: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -469,7 +467,7 @@ function NailsScreen({ photos = {} }) {
         </svg>
       </div>
       <div style={{ position: 'absolute', top: 136, left: 24, right: 24, borderRadius: 16, padding: 24, background: 'linear-gradient(180deg, rgba(193,255,114,0.15), rgba(193,255,114,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
-        {[['4', 'Photos'], ['14', 'Days Clean']].map(([v, l], i) => (
+        {[['2', 'Photos'], ['14', 'Days Clean']].map(([v, l], i) => (
           <div key={l} style={{ display: 'contents' }}>
             {i > 0 && <div style={{ width: 1, height: 40, background: 'rgba(255,255,255,0.1)', opacity: 0.3 * 3 }} />}
             <div style={{ textAlign: 'center' }}>
@@ -479,13 +477,13 @@ function NailsScreen({ photos = {} }) {
           </div>
         ))}
       </div>
-      <div style={{ position: 'absolute', top: 276, left: 24, right: 24, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-        {NAIL_DAYS.map(([day, date]) => (
-          <div key={day} style={{ position: 'relative', width: photo, height: photo, borderRadius: 12, overflow: 'hidden', marginBottom: 16, background: 'rgba(255,255,255,0.05)' }}>
-            {photos[day] ? <img src={photos[day]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : <PhotoPlaceholder />}
-            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 8, paddingTop: 22, background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.8))', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>Day {day}</span>
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{date}</span>
+      <div style={{ position: 'absolute', top: 268, left: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {NAIL_DAYS.map(([day, date, focus]) => (
+          <div key={day} style={{ position: 'relative', height: 206, borderRadius: 12, overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
+            {photos[day] ? <img src={photos[day]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: focus, display: 'block' }} /> : <PhotoPlaceholder />}
+            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '10px 12px', paddingTop: 28, background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.8))', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: 20, fontWeight: 700 }}>Day {day}</span>
+              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{date}</span>
             </div>
           </div>
         ))}
@@ -505,7 +503,7 @@ function NailsScreen({ photos = {} }) {
 
 function NailsCallout({ phone, shadow, photos = {} }) {
   return (
-    <Callout phone={phone} top={660}>
+    <Callout phone={phone} top={704}>
       <Card phone={phone} shadow={shadow} style={{ padding: '16px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ display: 'flex' }}>

@@ -53,8 +53,8 @@ and opacities) with the `ProgressRing` that `HomeScreen.tsx` renders inside it (
 gradient on the lime track) and the `SHADOWS.orbGlow` glow. In the app the layers rotate; the
 studio shows the frame where every rotation is 0deg.
 
-Frame 5's four Nail Progress photos are empty until you add them: use the "Nail Progress photos"
-section in the sidebar, or save `day-1.jpg`, `day-5.jpg`, `day-9.jpg` and `day-14.jpg` in
+Frame 5 shows two big Nail Progress photos (Day 1 and Day 14) from `nail-photos/`. To replace them, use the "Nail Progress photos"
+section in the sidebar, or save `day-1` and `day-14` (.jpg, .png or .webp) in
 `nail-photos/` and note their source and licence in `nail-photos/CREDITS.md`.
 
 Frame 3's Analytics ring is the native 360pt ring, scaled up about its centre (1.18× by

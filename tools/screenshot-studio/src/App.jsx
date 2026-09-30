@@ -8,13 +8,13 @@ const IMAGE_KEY = (id) => `nayl-screenshot-studio-img-${id}`;
 const PREVIEW_W = 250;
 
 // Nail Progress photos dropped into tools/screenshot-studio/nail-photos/ as
-// day-1.jpg, day-5.jpg, day-9.jpg, day-14.jpg (png/webp too) are picked up automatically.
+// day-1 and day-14 (.jpg/.png/.webp) are picked up automatically.
 const FOLDER_PHOTOS = Object.fromEntries(
   Object.entries(import.meta.glob('../nail-photos/day-*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}', { eager: true, query: '?url', import: 'default' }))
     .map(([file, url]) => [Number(/day-(\d+)\./i.exec(file)?.[1]), url])
     .filter(([day]) => day),
 );
-const NAIL_TILE_DAYS = [1, 5, 9, 14];
+const NAIL_TILE_DAYS = [1, 14];
 const nailKey = (day) => `nail-day-${day}`;
 
 function load() {
@@ -209,7 +209,7 @@ export default function App() {
               onClear={images[nailKey(day)] ? () => setImage(nailKey(day), null) : null}
             />
           ))}
-          <div className="hint">Or save them as day-1.jpg, day-5.jpg, day-9.jpg and day-14.jpg in tools/screenshot-studio/nail-photos/.</div>
+          <div className="hint">Or save them as day-1 and day-14 (.jpg, .png or .webp) in tools/screenshot-studio/nail-photos/.</div>
         </Section>
 
         <Section title="Canvas padding">

@@ -21,7 +21,8 @@ export const APP_FONT = "'Inter Variable', system-ui, sans-serif";
 const STARS = (() => {
   let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  return Array.from({ length: 70 }, () => ({ x: rnd() * 393, y: rnd() * 852, r: 0.5 + rnd() * 1.4, o: 0.25 + rnd() * 0.65 }));
+  // Kept faint (10-20% opacity) to match the subtle starfield in the live app.
+  return Array.from({ length: 70 }, () => ({ x: rnd() * 393, y: rnd() * 852, r: 0.5 + rnd() * 1.4, o: 0.1 + rnd() * 0.1 }));
 })();
 
 export function Page({ children, background, stars = true, starColor = '255,255,255' }) {
