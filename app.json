@@ -1,9 +1,9 @@
 {
   "expo": {
     "name": "Nayl",
-    "slug": "nayl-app",
+    "slug": "nayl",
     "scheme": "nayl",
-    "owner": "crupid3s-team",
+    "owner": "crupid2s-organization",
     "version": "1.0.0",
     "runtimeVersion": "1.0.0",
     "orientation": "portrait",
@@ -13,7 +13,6 @@
       "**/*"
     ],
     "updates": {
-      "url": "https://u.expo.dev/25b76779-54fb-4670-83ac-e2f6ada8261d",
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
@@ -106,11 +105,6 @@
       "@react-native-community/datetimepicker",
       "expo-status-bar",
       "expo-audio"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "25b76779-54fb-4670-83ac-e2f6ada8261d"
-      }
-    }
+    ]
   }
 }
