@@ -4,8 +4,8 @@
     "slug": "nayl",
     "scheme": "nayl",
     "owner": "crupid2s-organization",
-    "version": "1.0.0",
-    "runtimeVersion": "1.0.0",
+    "version": "1.1.0",
+    "runtimeVersion": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/Nayl-cooler-logo.png",
     "userInterfaceStyle": "light",
@@ -20,7 +20,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.nayl.mobile",
-      "buildNumber": "23",
+      "buildNumber": "25",
       "infoPlist": {
         "NSCameraUsageDescription": "Nayl uses your camera so you can take photos to track your nail progress over time.",
         "NSPhotoLibraryUsageDescription": "Nayl accesses your photo library so you can choose photos to track your nail progress and set a profile picture.",
