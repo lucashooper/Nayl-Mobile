@@ -14,18 +14,18 @@ export const FONTS = {
 
 export const WEIGHTS = [300, 400, 500, 600, 700, 800, 900];
 
-// Luxury gradients. `dark` decides the default text colour when a preset is picked.
+// Background presets. `dark` picks the default title colour when a preset is chosen.
+// Deep Violet is Nayl's brand background: #0B0714 -> #180D2B with a soft purple glow.
 export const BACKGROUNDS = {
-  midnight: { label: 'Midnight Luxe', dark: true, css: 'radial-gradient(120% 70% at 50% 0%, #1f2a44 0%, #0b0f1a 55%, #05070c 100%)', accent: '#7fb2ff', glow: '#4d7cff' },
-  aurora: { label: 'Aurora', dark: true, css: 'radial-gradient(90% 55% at 15% 5%, #3a1f6e 0%, transparent 60%), radial-gradient(80% 50% at 95% 35%, #0f4c5c 0%, transparent 60%), linear-gradient(180deg, #0c0a1d 0%, #06060d 100%)', accent: '#b69cff', glow: '#8b5cf6' },
-  emerald: { label: 'Obsidian Emerald', dark: true, css: 'radial-gradient(110% 60% at 50% 0%, #11392c 0%, #07140f 55%, #030806 100%)', accent: '#6ee7a8', glow: '#22c55e' },
-  ember: { label: 'Black Ember', dark: true, css: 'radial-gradient(100% 60% at 50% 100%, #3b0d12 0%, #120507 55%, #050203 100%)', accent: '#ff7a7a', glow: '#ef4444' },
-  ivory: { label: 'Ivory', dark: false, css: 'linear-gradient(180deg, #fbf8f2 0%, #efe8dc 100%)', accent: '#3f7d5a', glow: '#c9b98f' },
-  champagne: { label: 'Champagne', dark: false, css: 'radial-gradient(120% 70% at 50% 0%, #fff7ea 0%, #f1e2c6 60%, #e3cfa8 100%)', accent: '#9a6b1f', glow: '#e0b872' },
-  pearl: { label: 'Pearl Mist', dark: false, css: 'radial-gradient(90% 55% at 10% 0%, #e9eefc 0%, transparent 60%), radial-gradient(80% 55% at 100% 40%, #f6e8f3 0%, transparent 60%), linear-gradient(180deg, #f8f9fc 0%, #eceff6 100%)', accent: '#5561d6', glow: '#9aa6ff' },
+  violet: { label: 'Deep Violet', dark: true, from: '#0B0714', to: '#180D2B', glow: '#7C3AED' },
+  plum: { label: 'Midnight Plum', dark: true, from: '#0A0610', to: '#241033', glow: '#A855F7' },
+  obsidian: { label: 'Obsidian', dark: true, from: '#07070A', to: '#15131C', glow: '#6D5BD0' },
+  emerald: { label: 'Obsidian Emerald', dark: true, from: '#030806', to: '#0E2A20', glow: '#22C55E' },
+  ivory: { label: 'Ivory', dark: false, from: '#FBF8F2', to: '#EFE8DC', glow: '#C9B98F' },
+  lilac: { label: 'Lilac Mist', dark: false, from: '#F7F4FC', to: '#E9E1F7', glow: '#B69CFF' },
 };
 
-export const TEXTURES = { none: 'None', mesh: 'Mesh', grain: 'Grain', both: 'Mesh + grain' };
+export const TEXTURES = { none: 'None', mesh: 'Soft mesh glow', grain: 'Grain', both: 'Mesh + grain' };
 
 export const FINISHES = {
   titanium: { label: 'Natural Titanium', frame: 'linear-gradient(135deg, #d9d5cd 0%, #9d998f 22%, #e4e0d8 48%, #8a867d 74%, #c9c5bc 100%)', edge: '#6f6b63' },
@@ -41,34 +41,36 @@ export const SCREENS = {
   milestones: 'Milestones & analytics',
 };
 
+export const DEFAULT_EXPORT_DIR = './assets/app-store-screenshots/';
+
 export const DEFAULT_STATE = {
-  version: 1,
+  version: 2,
   font: 'modern',
   headlineWeight: 800,
-  headlineSize: 128,
-  subtitleWeight: 500,
-  subtitleSize: 54,
-  headlineColor: '',
-  subtitleColor: '',
-  accentColor: '',
-  background: 'midnight',
+  headlineSize: 136,
+  letterSpacing: -0.03, // em
+  headlineColor: '#FFFFFF',
+  background: 'violet',
   customBg: false,
-  customFrom: '#101626',
-  customTo: '#04060b',
+  customFrom: '#0B0714',
+  customTo: '#180D2B',
+  customGlow: '#7C3AED',
   texture: 'mesh',
-  textureStrength: 60,
+  textureStrength: 70,
   finish: 'midnight',
   shadow: true,
   glow: true,
-  phoneScale: 100,
-  phoneTop: 840,
   showCallouts: true,
-  exportMode: 'zip',
+  phoneScale: 100, // % of a 1000px-wide iPhone frame
+  topPadding: 190, // canvas top to headline
+  bottomPadding: 110, // phone bottom to canvas bottom (negative lets the phone bleed off)
+  exportDir: DEFAULT_EXPORT_DIR,
+  exportMode: 'disk',
   frames: [
-    { id: 'hook', name: 'The Hook', screen: 'home', headline: 'Break the Habit.\n*Restore Your Confidence.*', subtitle: 'Your bite-free streak, one day at a time' },
-    { id: 'panic', name: 'Panic Button', screen: 'panic', headline: 'One Tap\nWhen *Tempted*', subtitle: 'Instant support the moment an urge hits' },
-    { id: 'progress', name: 'Streak & Progress', screen: 'progress', headline: 'Track Every\n*Bite-Free* Day', subtitle: 'Clear recovery metrics that keep you going' },
-    { id: 'library', name: 'Sound & Wellness', screen: 'library', headline: 'Calm the Urge\nwith *Guided Audio*', subtitle: 'Ambient sounds and guided meditation' },
-    { id: 'milestones', name: 'Milestones', screen: 'milestones', headline: 'Watch Your\n*Progress Grow*', subtitle: 'Milestones and stats that prove it’s working' },
+    { id: 'hook', name: 'The Hook', screen: 'home', headline: 'Break The Habit' },
+    { id: 'panic', name: 'Panic Button', screen: 'panic', headline: 'Instant Panic Button' },
+    { id: 'progress', name: 'Streak & Progress', screen: 'progress', headline: 'Track Your Streak' },
+    { id: 'library', name: 'Sound & Wellness', screen: 'library', headline: 'Guided Urge Relief' },
+    { id: 'milestones', name: 'Milestones', screen: 'milestones', headline: 'Watch Your Recovery' },
   ],
 };

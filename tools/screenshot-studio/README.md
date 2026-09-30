@@ -1,7 +1,8 @@
 # Nayl Screenshot Studio
 
-A local React (Vite) editor for the App Store screenshots. It renders five frames
-and exports them as 1290 × 2796 PNGs (6.7"/6.9" iPhone size), RGB with no alpha,
+A local React (Vite) editor for the App Store screenshots, in a Cal AI style: one bold
+solid-colour title, the phone below, and a floating card that overhangs the phone. It
+exports five 1290 × 2796 PNGs (6.7"/6.9" iPhone size): lossless, RGB with no alpha,
 with 300 DPI written into the PNG's pHYs chunk.
 
 ## Run it
@@ -12,37 +13,56 @@ npm install
 npm run dev
 ```
 
-The editor opens at http://localhost:5178. Everything (fonts, app artwork) is bundled,
-so it works offline after `npm install`.
-
-## What's in the editor
+The editor opens at http://localhos## What's in the editor
 
 - **Typography**: Modern Sans (Manrope), Inter, SF Pro (the system font on a Mac), Clean Serif
-  (Playfair Display), Rounded (SF Pro Rounded on a Mac, Nunito elsewhere); weights, sizes and
-  headline/subtitle/accent colours. Wrap words in `*stars*` to colour them with the accent.
-- **Background**: dark and light gradient presets, a custom two-hex gradient, and mesh/grain textures.
+  (Playfair Display), Rounded (SF Pro Rounded on a Mac, Nunito elsewhere); weight, size,
+  letter spacing (-0.05em to 0.1em) and a solid title colour (default #FFFFFF).
+- **Background**: Deep Violet (#0B0714 to #180D2B with a soft purple glow) by default, other
+  presets, custom top/bottom/glow hex colours, and a soft mesh glow or grain texture.
 - **Device frame**: iPhone 16 Pro in Natural Titanium, Midnight or Starlight, with shadow and glow
-  toggles, size and position sliders, and optional floating call-out cards.
-- **Headlines & subtitles** for all five frames.
-- **Export All** renders all five frames and downloads one ZIP (or five separate PNGs, set in the
-  Export section). Each frame also has its own **PNG** button.
+  toggles, frame scale, and optional floating call-out cards.
+- **Canvas padding**: top (canvas edge to title) and bottom (phone to canvas edge; negative lets
+  the phone run off the bottom).
+- **Headlines** for all five frames.
+- **Export folder** (default `./assets/app-store-screenshots/`, relative to the repo root) and
+  **Export All**:
+  - *Save PNGs into the export folder*: writes the five files straight into that folder. This uses
+    a small endpoint in the Vite dev server (`studio-server.js`), so it works while the studio runs
+    through `npm run dev`; the folder must be inside the repo.
+  - *Download one ZIP*: the ZIP contains the export folder path with the five PNGs inside.
+  - *Download 5 separate PNGs*.
+  Each frame also has its own **PNG** download button.
+
+Settings are saved in the browser (localStorage).
+
+ch frame also has its own **PNG** button.
 
 Settings are saved in the browser (localStorage).
 
 ## Device screens
 
 The five device screens are HTML rebuilds of the app's screens, using the app's own colours,
-Inter font and artwork straight from `assets/` (orb, flame, panic-button icons, mountain,
-sound icons, achievement badges). They are mocks with sample data (a 14-day streak, "James"),
+Inter font and full-resolution artwork straight from `assets/` (flame, panic-button icons,
+mountain, sound icons, achievement badges). They use sample data (a 14-day streak, "James"),
 not simulator captures.
 
+The home-screen orb (`src/screens/NaylOrb.jsx`) is a direct port of the production orb:
+`src/components/SwirlingOrb.tsx` (cool-orb.webp plus its eight gradient layers, same colours
+and opacities) with the `ProgressRing` that `HomeScreen.tsx` renders inside it (Ocean Blue
+gradient on the lime track) and the `SHADOWS.orbGlow` glow. In the app the layers rotate; the
+studio shows the frame where every rotation is 0deg.
+
 To use a real capture instead, click **Use real capture** under a frame (or drop an image on it).
-For sharp results use a 1179 × 2556 or 1290 × 2796 screenshot from an iPhone 16 Pro / Pro Max
-simulator. The floating call-out is hidden on frames that use a real capture.
+Raw @3x simulator PNGs (1179 × 2556 from an iPhone 16 Pro, 1320 × 2868 from a Pro Max) are used
+as-is: the export renders at the native 1290 × 2796 with no upscaling and no lossy compression.
+At the default frame scale the screen area is about 924 px wide, so a 1179 px capture is scaled
+down, never up. The floating call-out is hidden on frames that use a real capture.
 
 ## Files
 
-- `src/screens/` – the device-screen mocks and the floating call-outs for each frame.
+- `src/screens/` – the device-screen mocks, the ported orb and the floating call-outs.
+- `studio-server.js` – the dev-server endpoint that writes exports into the repo.
 - `src/components/Frame.jsx` – one 1290 × 2796 frame (background, text, device, call-out).
 - `src/components/Device.jsx` – the iPhone 16 Pro frame.
 - `src/export.js`, `src/png.js` – rendering (html-to-image) and the RGB + 300 DPI PNG encoder.

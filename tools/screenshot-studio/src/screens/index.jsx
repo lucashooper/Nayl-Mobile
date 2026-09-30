@@ -1,5 +1,5 @@
 import { C, APP_FONT, Page, TabBar, Icon, Ring, WeekRow, PanicPill } from './kit.jsx';
-import coolOrb from '@app-assets/cool-orb.webp';
+import NaylOrb from './NaylOrb.jsx';
 import flameIcon from '@app-assets/new-flame-icon.webp';
 import trophyIcon from '@app-assets/trophy-icon.webp';
 import enamelIcon from '@app-assets/panic-button-icons/damaged-enamel-icon.webp';
@@ -19,36 +19,39 @@ import blossom from '@app-assets/bigger-achievement-icons/Blossom-280px.png';
 import oak from '@app-assets/bigger-achievement-icons/Da-Oak-280px.png';
 import landmark from '@app-assets/bigger-achievement-icons/Landmark-280px.png';
 
-// Frame-space helper for the floating call-outs: children are laid out in
-// points and scaled up, so they match the device screen's styling exactly.
-function Pop({ x, y, scale, children, center = false }) {
+// Floating call-out cards, Cal AI style: a wide card that overhangs the phone
+// slightly on both sides. Content is laid out in points (like the screens) and
+// scaled up; `top` is the screen point the card's top edge lines up with.
+const CARD_PT = 340;
+
+function Callout({ phone, top, width = CARD_PT, children }) {
+  const scale = 3.2 * (phone.width / 1000);
   return (
-    <div style={{ position: 'absolute', left: x, top: y, transform: `${center ? 'translateX(-50%) ' : ''}scale(${scale})`, transformOrigin: center ? '50% 0' : '0 0', fontFamily: APP_FONT, color: '#fff' }}>
+    <div
+      style={{
+        position: 'absolute',
+        left: phone.x + phone.width / 2 - (width * scale) / 2,
+        top: phone.y + phone.inset + top * phone.scale,
+        width,
+        transform: `scale(${scale})`,
+        transformOrigin: '0 0',
+        fontFamily: APP_FONT,
+        color: '#fff',
+      }}
+    >
       {children}
     </div>
   );
 }
 
-const glass = (shadow) => ({
-  background: 'linear-gradient(180deg, #1c2244 0%, #0e1228 100%)',
-  border: '1px solid rgba(255,255,255,0.16)',
-  borderRadius: 22,
-  boxShadow: shadow ? '0 18px 40px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.05)' : 'none',
+const card = (shadow) => ({
+  background: 'linear-gradient(180deg, #1f1733 0%, #140e24 100%)',
+  border: '1px solid rgba(255,255,255,0.14)',
+  borderRadius: 24,
+  boxShadow: shadow ? '0 16px 36px rgba(0,0,0,0.5)' : 'none',
 });
 
 /* ---------------------------------------------------------------- Home */
-
-function StreakOrb({ size = 180 }) {
-  return (
-    <div style={{ position: 'relative', width: size, height: size }}>
-      <div style={{ position: 'absolute', inset: 14, borderRadius: '50%', boxShadow: '0 0 30px rgba(255,255,255,0.35)', overflow: 'hidden' }}>
-        <img src={coolOrb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(60% 60% at 30% 30%, rgba(59,130,246,0.45), transparent 70%), radial-gradient(50% 50% at 75% 70%, rgba(236,72,153,0.35), transparent 70%), radial-gradient(45% 45% at 70% 25%, rgba(139,92,246,0.4), transparent 70%)', mixBlendMode: 'screen' }} />
-      </div>
-      <Ring id="homeRing" size={size} stroke={10} value={0.23} track="rgba(193,255,114,0.2)" gradient={[C.lime, C.lime]} />
-    </div>
-  );
-}
 
 function ActionButton({ icon, label }) {
   return (
@@ -79,7 +82,7 @@ function HomeScreen() {
         <WeekRow done={4} today={4} />
       </div>
       <div style={{ position: 'absolute', top: 178, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
-        <StreakOrb />
+        <NaylOrb id="home-orb" />
       </div>
       <div style={{ position: 'absolute', top: 372, left: 0, right: 0, textAlign: 'center' }}>
         <div style={{ fontSize: 14, fontWeight: 500, color: C.muted }}>You've been nail-biting free for:</div>
@@ -110,16 +113,20 @@ function HomeScreen() {
 }
 
 function HomeCallout({ phone, shadow }) {
+  // Sits over the in-app timer block (points 368-500), leaving the orb and action buttons visible.
   return (
-    <Pop x={phone.x + phone.w / 2} y={phone.y + 895 * (phone.w / 1000)} scale={2.5 * (phone.w / 1000)} center>
-      <div style={{ ...glass(shadow), width: 280, padding: '12px 20px 14px', textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: C.muted, letterSpacing: 0.6, textTransform: 'uppercase' }}>
-          <img src={flameIcon} alt="" style={{ width: 16, height: 16 }} /> Bite-free streak
+    <Callout phone={phone} top={368}>
+      <div style={{ ...card(shadow), padding: '12px 14px 12px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: 46, fontWeight: 900, lineHeight: 1 }}>14</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: C.secondary }}>days bite-free</span>
+          </div>
+          <div style={{ display: 'inline-block', marginTop: 8, padding: '4px 12px', borderRadius: 14, background: 'rgba(255,255,255,0.06)', border: `0.5px solid ${C.hairline}`, fontSize: 14, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>6hr 42m 18s</div>
         </div>
-        <div style={{ fontSize: 46, fontWeight: 900, marginTop: 0, lineHeight: 1.15, textShadow: '0 0 20px rgba(193,255,114,0.25)' }}>14 days</div>
-        <div style={{ display: 'inline-block', marginTop: 6, padding: '6px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.06)', border: `0.5px solid ${C.hairline}`, fontSize: 15, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>6hr 42m 18s</div>
+        <NaylOrb id="callout-orb" size={78} strokeWidth={6} glow={false} />
       </div>
-    </Pop>
+    </Callout>
   );
 }
 
@@ -173,22 +180,13 @@ function PanicScreen() {
   );
 }
 
-function PanicCallout({ phone, theme, shadow }) {
-  const k = phone.w / 1000;
-  const cx = phone.x + phone.w / 2;
-  const y = phone.y - 170 * k;
-  const w = 880 * k;
+function PanicCallout({ phone, shadow }) {
   return (
-    <>
-      {[1.0, 1.16, 1.32].map((r, i) => (
-        <div key={i} style={{ position: 'absolute', left: cx - (w * r) / 2, top: y + 105 * k - (210 * k * r) / 2, width: w * r, height: 210 * k * r, borderRadius: 999, border: `${4 * k}px solid rgba(240,85,85,${0.5 - i * 0.15})` }} />
-      ))}
-      <Pop x={cx} y={y} scale={2.8 * k} center>
-        <div style={{ filter: shadow ? 'drop-shadow(0 10px 22px rgba(224,46,46,0.45))' : 'none' }}>
-          <PanicPill width={314} />
-        </div>
-      </Pop>
-    </>
+    <Callout phone={phone} top={-40}>
+      <div style={{ filter: shadow ? 'drop-shadow(0 10px 22px rgba(224,46,46,0.45))' : 'none' }}>
+        <PanicPill width={CARD_PT} />
+      </div>
+    </Callout>
   );
 }
 
@@ -225,17 +223,16 @@ function ProgressScreen() {
 }
 
 function ProgressCallout({ phone, shadow }) {
-  const k = phone.w / 1000;
   return (
-    <Pop x={phone.x + phone.w / 2} y={phone.y + 1610 * k} scale={2.6 * k} center>
-      <div style={{ ...glass(shadow), width: 300, padding: '16px 18px 14px' }}>
+    <Callout phone={phone} top={660}>
+      <div style={{ ...card(shadow), padding: '16px 20px 14px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
-          <span style={{ fontSize: 15, fontWeight: 700 }}>This week</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: C.lime }}>7 / 7 bite-free</span>
+          <span style={{ fontSize: 16, fontWeight: 700 }}>This week</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: C.lime }}>7 / 7 bite-free</span>
         </div>
-        <WeekRow done={7} size={30} />
+        <WeekRow done={7} size={32} />
       </div>
-    </Pop>
+    </Callout>
   );
 }
 
@@ -296,25 +293,24 @@ function LibraryScreen() {
 }
 
 function LibraryCallout({ phone, shadow }) {
-  const k = phone.w / 1000;
   return (
-    <Pop x={phone.x + phone.w / 2} y={phone.y + 1690 * k} scale={2.6 * k} center>
-      <div style={{ ...glass(shadow), width: 300, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #0ea5e9, #1e3a8a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <img src={seaIcon} alt="" style={{ width: 34, height: 34, objectFit: 'contain' }} />
+    <Callout phone={phone} top={690}>
+      <div style={{ ...card(shadow), padding: 14, display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #0ea5e9, #1e3a8a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src={seaIcon} alt="" style={{ width: 36, height: 36, objectFit: 'contain' }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: C.lime }}>NOW PLAYING</div>
-          <div style={{ fontSize: 17, fontWeight: 700, marginTop: 1 }}>Ocean Waves</div>
+          <div style={{ fontSize: 18, fontWeight: 700, marginTop: 1 }}>Ocean Waves</div>
           <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.12)', marginTop: 8, overflow: 'hidden' }}>
             <div style={{ width: '42%', height: '100%', background: C.blue }} />
           </div>
         </div>
-        <div style={{ width: 40, height: 40, borderRadius: 20, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="pause" size={18} color="#0b0f1a" width={3} />
+        <div style={{ width: 44, height: 44, borderRadius: 22, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="pause" size={18} color="#140e24" width={3} />
         </div>
       </div>
-    </Pop>
+    </Callout>
   );
 }
 
@@ -396,18 +392,17 @@ function MilestonesScreen() {
 }
 
 function MilestonesCallout({ phone, shadow }) {
-  const k = phone.w / 1000;
   return (
-    <Pop x={phone.x + phone.w / 2} y={phone.y + 1690 * k} scale={2.6 * k} center>
-      <div style={{ ...glass(shadow), width: 290, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+    <Callout phone={phone} top={700}>
+      <div style={{ ...card(shadow), padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16 }}>
         <img src={rooted} alt="" style={{ width: 64, height: 64, objectFit: 'contain' }} />
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: C.lime }}>MILESTONE UNLOCKED</div>
-          <div style={{ fontSize: 19, fontWeight: 800, marginTop: 2 }}>Deeply Rooted</div>
+          <div style={{ fontSize: 20, fontWeight: 800, marginTop: 2 }}>Deeply Rooted</div>
           <div style={{ fontSize: 13, color: C.muted, marginTop: 1 }}>30 days bite-free</div>
         </div>
       </div>
-    </Pop>
+    </Callout>
   );
 }
 

@@ -3,14 +3,20 @@ import { FINISHES } from '../config.js';
 // iPhone 16 Pro: 393 x 852 pt screen. Everything is sized from `width` (outer frame, px).
 export const SCREEN_PT = { width: 393, height: 852 };
 
-export default function Device({ width, finish, shadow, glow, glowColor, children }) {
-  const f = FINISHES[finish] ?? FINISHES.midnight;
+// Outer size, screen inset and point-to-pixel scale for a frame `width` px wide.
+export function deviceMetrics(width) {
   const rim = width * 0.012; // metal band
   const bezel = width * 0.026; // black glass border
-  const screenW = width - 2 * (rim + bezel);
-  const scale = screenW / SCREEN_PT.width;
+  const inset = rim + bezel;
+  const scale = (width - 2 * inset) / SCREEN_PT.width;
+  return { width, height: SCREEN_PT.height * scale + 2 * inset, rim, bezel, inset, scale };
+}
+
+export default function Device({ metrics, finish, shadow, glow, glowColor, children }) {
+  const f = FINISHES[finish] ?? FINISHES.midnight;
+  const { width, height, rim, bezel, scale } = metrics;
+  const screenW = SCREEN_PT.width * scale;
   const screenH = SCREEN_PT.height * scale;
-  const height = screenH + 2 * (rim + bezel);
   const outerR = width * 0.155;
   const screenR = outerR - rim - bezel;
 

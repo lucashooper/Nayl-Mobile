@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { BACKGROUNDS, CANVAS, DEFAULT_STATE, FINISHES, FONTS, SCREENS, TEXTURES, WEIGHTS } from './config.js';
+import { BACKGROUNDS, CANVAS, DEFAULT_EXPORT_DIR, DEFAULT_STATE, FINISHES, FONTS, SCREENS, TEXTURES, WEIGHTS } from './config.js';
 import Frame, { resolveTheme } from './components/Frame.jsx';
-import { exportAll, exportOne } from './export.js';
+import { canSaveToDisk, exportAll, exportOne } from './export.js';
 
 const STORE_KEY = 'nayl-screenshot-studio-v1';
 const IMAGE_KEY = (id) => `nayl-screenshot-studio-img-${id}`;
@@ -31,7 +31,13 @@ export default function App() {
   const [images, setImages] = useState(loadImages);
   const [busy, setBusy] = useState('');
   const [note, setNote] = useState('');
+  const [diskOk, setDiskOk] = useState(false);
   const nodes = useRef([]);
+
+  useEffect(() => {
+    canSaveToDisk().then(setDiskOk);
+  }, []);
+  const mode = state.exportMode === 'disk' && !diskOk ? 'zip' : state.exportMode;
 
   useEffect(() => {
     try {
@@ -80,8 +86,10 @@ export default function App() {
 
   const doExportAll = () =>
     run('Rendering…', async () => {
-      await exportAll(nodes.current, state.frames, state.exportMode, (i, n) => setBusy(i < n ? `Rendering ${i + 1} of ${n}…` : 'Saving…'));
-      setNote(`Exported ${state.frames.length} PNGs at ${CANVAS.width} × ${CANVAS.height}, 300 DPI.`);
+      const where = await exportAll(nodes.current, state.frames, { mode, dir: state.exportDir }, (i, n) =>
+        setBusy(i < n ? `Rendering ${i + 1} of ${n}…` : 'Saving…'),
+      );
+      setNote(`Exported ${state.frames.length} PNGs at ${CANVAS.width} × ${CANVAS.height}, 300 DPI${where ? ` to ${where}` : ''}.`);
     });
 
   return (
@@ -103,45 +111,38 @@ export default function App() {
             </div>
           </Field>
           <Row>
-            <Field label="Headline weight">
+            <Field label="Weight">
               <Select value={state.headlineWeight} options={WEIGHTS} onChange={(v) => set({ headlineWeight: +v })} />
             </Field>
-            <Field label={`Headline size · ${state.headlineSize}px`}>
-              <input type="range" min="80" max="170" value={state.headlineSize} onChange={(e) => set({ headlineSize: +e.target.value })} />
+            <Field label={`Size · ${state.headlineSize}px`}>
+              <input type="range" min="80" max="190" value={state.headlineSize} onChange={(e) => set({ headlineSize: +e.target.value })} />
             </Field>
           </Row>
           <Row>
-            <Field label="Subtitle weight">
-              <Select value={state.subtitleWeight} options={WEIGHTS} onChange={(v) => set({ subtitleWeight: +v })} />
+            <Field label={`Letter spacing · ${state.letterSpacing.toFixed(3)}em`}>
+              <input type="range" min="-0.05" max="0.1" step="0.005" value={state.letterSpacing} onChange={(e) => set({ letterSpacing: +e.target.value })} />
             </Field>
-            <Field label={`Subtitle size · ${state.subtitleSize}px`}>
-              <input type="range" min="32" max="80" value={state.subtitleSize} onChange={(e) => set({ subtitleSize: +e.target.value })} />
-            </Field>
+            <Color label="Title colour" value={state.headlineColor} fallback={theme.headline} onChange={(v) => set({ headlineColor: v })} />
           </Row>
-          <Row>
-            <Color label="Headline" value={state.headlineColor} fallback={theme.headline} onChange={(v) => set({ headlineColor: v })} />
-            <Color label="Subtitle" value={state.subtitleColor} fallback={theme.subtitle} onChange={(v) => set({ subtitleColor: v })} />
-            <Color label="Accent" value={state.accentColor} fallback={theme.accent} onChange={(v) => set({ accentColor: v })} />
-          </Row>
-          <div className="hint">Wrap words in *stars* to colour them with the accent.</div>
         </Section>
 
         <Section title="Background">
           <div className="swatches">
             {Object.entries(BACKGROUNDS).map(([k, b]) => (
               <button key={k} title={b.label} className={`swatch ${!state.customBg && state.background === k ? 'on' : ''}`} onClick={() => set({ background: k, customBg: false })}>
-                <span style={{ background: b.css }} />
+                <span style={{ background: `radial-gradient(60% 45% at 50% 55%, ${b.glow}55, transparent), linear-gradient(180deg, ${b.from}, ${b.to})` }} />
                 <em>{b.label}</em>
               </button>
             ))}
           </div>
           <label className="check">
-            <input type="checkbox" checked={state.customBg} onChange={(e) => set({ customBg: e.target.checked })} /> Custom hex gradient
+            <input type="checkbox" checked={state.customBg} onChange={(e) => set({ customBg: e.target.checked })} /> Custom hex colours
           </label>
           {state.customBg && (
             <Row>
               <Hex label="Top" value={state.customFrom} onChange={(v) => set({ customFrom: v })} />
               <Hex label="Bottom" value={state.customTo} onChange={(v) => set({ customTo: v })} />
+              <Hex label="Glow" value={state.customGlow} onChange={(v) => set({ customGlow: v })} />
             </Row>
           )}
           <Row>
@@ -173,32 +174,54 @@ export default function App() {
           <label className="check">
             <input type="checkbox" checked={state.showCallouts} onChange={(e) => set({ showCallouts: e.target.checked })} /> Floating call-out cards
           </label>
-          <Row>
-            <Field label={`Phone size · ${state.phoneScale}%`}>
-              <input type="range" min="75" max="112" value={state.phoneScale} onChange={(e) => set({ phoneScale: +e.target.value })} />
-            </Field>
-            <Field label={`Phone position · ${state.phoneTop}px`}>
-              <input type="range" min="620" max="1100" step="10" value={state.phoneTop} onChange={(e) => set({ phoneTop: +e.target.value })} />
-            </Field>
-          </Row>
+          <Field label={`iPhone frame scale · ${state.phoneScale}%`}>
+            <input type="range" min="60" max="125" value={state.phoneScale} onChange={(e) => set({ phoneScale: +e.target.value })} />
+          </Field>
         </Section>
 
-        <Section title="Headlines & subtitles">
+        <Section title="Canvas padding">
+          <Field label={`Top padding (canvas top to title) · ${state.topPadding}px`}>
+            <input type="range" min="60" max="600" step="5" value={state.topPadding} onChange={(e) => set({ topPadding: +e.target.value })} />
+          </Field>
+          <Field label={`Bottom padding (phone to canvas bottom) · ${state.bottomPadding}px`}>
+            <input type="range" min="-600" max="500" step="5" value={state.bottomPadding} onChange={(e) => set({ bottomPadding: +e.target.value })} />
+          </Field>
+          <div className="hint">Negative bottom padding lets the phone run off the bottom edge.</div>
+        </Section>
+
+        <Section title="Headlines">
           {state.frames.map((f, i) => (
             <div key={f.id} className="panel-edit">
               <div className="panel-name">
                 {i + 1}. {f.name}
               </div>
-              <textarea rows={2} value={f.headline} onChange={(e) => setFrame(i, { headline: e.target.value })} />
-              <input value={f.subtitle} placeholder="Subtitle" onChange={(e) => setFrame(i, { subtitle: e.target.value })} />
+              <input value={f.headline} onChange={(e) => setFrame(i, { headline: e.target.value })} />
             </div>
           ))}
         </Section>
 
         <Section title="Export">
-          <Field label="Export All downloads">
-            <Select value={state.exportMode} options={[['zip', 'One ZIP with 5 PNGs'], ['files', '5 separate PNGs']]} onChange={(v) => set({ exportMode: v })} />
+          <Field label="Export folder">
+            <input value={state.exportDir} placeholder={DEFAULT_EXPORT_DIR} onChange={(e) => set({ exportDir: e.target.value })} />
           </Field>
+          <Field label="Export All">
+            <Select
+              value={state.exportMode}
+              options={[
+                ['disk', diskOk ? 'Save PNGs into the export folder' : 'Save into the export folder (needs npm run dev)'],
+                ['zip', 'Download one ZIP'],
+                ['files', 'Download 5 separate PNGs'],
+              ]}
+              onChange={(v) => set({ exportMode: v })}
+            />
+          </Field>
+          <div className="hint">
+            {mode === 'disk'
+              ? 'Folder is relative to the Nayl repo root.'
+              : state.exportMode === 'disk'
+                ? 'Saving to disk only works while the studio runs through npm run dev, so Export All will download a ZIP instead.'
+                : 'The ZIP keeps the export folder as its folder structure.'}
+          </div>
           <button
             className="ghost"
             onClick={() => {

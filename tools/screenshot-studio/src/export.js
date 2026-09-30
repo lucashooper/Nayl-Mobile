@@ -43,24 +43,53 @@ export async function exportOne(node, index, frame) {
   save(await renderFrame(node, await getFontEmbedCSS(node)), fileName(index, frame));
 }
 
-// mode: 'zip' (one download) or 'files' (five PNG downloads).
-export async function exportAll(nodes, frames, mode, onProgress) {
+// True when the studio is served by its own dev server, which can write files.
+export async function canSaveToDisk() {
+  try {
+    const res = await fetch('/__studio/ping');
+    return res.ok && (await res.json()).ok === true;
+  } catch {
+    return false;
+  }
+}
+
+async function saveToDisk(dir, name, blob) {
+  const res = await fetch(`/__studio/save?dir=${encodeURIComponent(dir)}&name=${encodeURIComponent(name)}`, { method: 'POST', body: blob });
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(out.error || `Saving ${name} failed (${res.status})`);
+  return out.dir;
+}
+
+function zipFolder(dir) {
+  return dir.replace(/\\/g, '/').replace(/^(\.\/)+/, '').replace(/^\/+|\/+$/g, '').split('/').filter((p) => p && p !== '..' && p !== '.').join('/');
+}
+
+// mode: 'disk' (write into `dir` via the dev server), 'zip' (one download) or
+// 'files' (five PNG downloads). Returns where the files went, for the status line.
+export async function exportAll(nodes, frames, { mode, dir }, onProgress) {
   const fontEmbedCSS = await getFontEmbedCSS(nodes[0]);
   const rendered = [];
   for (let i = 0; i < nodes.length; i++) {
     onProgress?.(i, nodes.length);
     rendered.push({ name: fileName(i, frames[i]), blob: await renderFrame(nodes[i], fontEmbedCSS) });
   }
+  onProgress?.(nodes.length, nodes.length);
+
+  if (mode === 'disk') {
+    let written = '';
+    for (const { name, blob } of rendered) written = await saveToDisk(dir, name, blob);
+    return written;
+  }
   if (mode === 'files') {
     for (const { name, blob } of rendered) {
       save(blob, name);
       await new Promise((r) => setTimeout(r, 350)); // browsers drop rapid-fire downloads
     }
-  } else {
-    const zip = new JSZip();
-    for (const { name, blob } of rendered) zip.file(name, blob);
-    save(await zip.generateAsync({ type: 'blob' }), 'nayl-app-store-6.7in-1290x2796.zip');
+    return '';
   }
-  onProgress?.(nodes.length, nodes.length);
-  return rendered;
+  const zip = new JSZip();
+  const folder = zipFolder(dir);
+  for (const { name, blob } of rendered) zip.file(folder ? `${folder}/${name}` : name, blob);
+  save(await zip.generateAsync({ type: 'blob' }), 'nayl-app-store-6.7in-1290x2796.zip');
+  return '';
 }

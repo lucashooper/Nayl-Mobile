@@ -1,23 +1,25 @@
 import { forwardRef } from 'react';
 import { BACKGROUNDS, CANVAS, FONTS } from '../config.js';
-import Device, { SCREEN_PT } from './Device.jsx';
+import Device, { deviceMetrics, SCREEN_PT } from './Device.jsx';
 import { SCREEN_COMPONENTS } from '../screens/index.jsx';
 
 const GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.55 0'/></filter><rect width='300' height='300' filter='url(#n)'/></svg>",
 )}")`;
 
-// Resolved look shared by every frame (colours fall back to the background preset).
+// Resolved look shared by every frame.
 export function resolveTheme(s) {
-  const preset = BACKGROUNDS[s.background] ?? BACKGROUNDS.midnight;
-  const dark = s.customBg ? isDark(s.customFrom) : preset.dark;
+  const preset = BACKGROUNDS[s.background] ?? BACKGROUNDS.violet;
+  const from = s.customBg ? s.customFrom : preset.from;
+  const to = s.customBg ? s.customTo : preset.to;
+  const glow = s.customBg ? s.customGlow : preset.glow;
+  const dark = s.customBg ? isDark(from) : preset.dark;
   return {
     dark,
-    bg: s.customBg ? `linear-gradient(180deg, ${s.customFrom} 0%, ${s.customTo} 100%)` : preset.css,
-    accent: s.accentColor || (s.customBg ? '#7fb2ff' : preset.accent),
-    glow: s.customBg ? s.accentColor || '#7fb2ff' : preset.glow,
-    headline: s.headlineColor || (dark ? '#ffffff' : '#141414'),
-    subtitle: s.subtitleColor || (dark ? 'rgba(255,255,255,0.68)' : 'rgba(20,20,20,0.62)'),
+    from,
+    to,
+    glow,
+    headline: s.headlineColor || (dark ? '#FFFFFF' : '#141414'),
     font: (FONTS[s.font] ?? FONTS.modern).stack,
   };
 }
@@ -30,29 +32,14 @@ function isDark(hex) {
   return lum < 140;
 }
 
-// "*word*" renders in the accent colour.
-function Rich({ text, accent }) {
-  return text.split('\n').map((line, i) => (
-    <div key={i}>
-      {line.split(/(\*[^*]+\*)/g).map((part, j) =>
-        part.startsWith('*') && part.endsWith('*') && part.length > 2 ? (
-          <span key={j} style={{ color: accent }}>{part.slice(1, -1)}</span>
-        ) : (
-          <span key={j}>{part}</span>
-        ),
-      )}
-    </div>
-  ));
-}
-
 const Frame = forwardRef(function Frame({ state, frame, image }, ref) {
   const t = resolveTheme(state);
   const texture = state.texture;
   const strength = state.textureStrength / 100;
 
-  const phoneW = Math.round(1000 * (state.phoneScale / 100));
-  const phoneX = (CANVAS.width - phoneW) / 2;
-  const phoneY = state.phoneTop;
+  const phone = deviceMetrics(Math.round(1000 * (state.phoneScale / 100)));
+  phone.x = (CANVAS.width - phone.width) / 2;
+  phone.y = CANVAS.height - state.bottomPadding - phone.height;
   const Screen = SCREEN_COMPONENTS[frame.screen];
 
   return (
@@ -63,51 +50,42 @@ const Frame = forwardRef(function Frame({ state, frame, image }, ref) {
         width: CANVAS.width,
         height: CANVAS.height,
         overflow: 'hidden',
-        background: t.bg,
+        background: `linear-gradient(180deg, ${t.from} 0%, ${t.to} 100%)`,
         fontFamily: t.font,
       }}
     >
+      {/* Soft radial glow at the centre of the canvas, behind the phone. */}
+      <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(60% 38% at 50% 52%, ${t.glow}${t.dark ? '40' : '30'} 0%, ${t.glow}14 55%, transparent 100%)` }} />
       {(texture === 'mesh' || texture === 'both') && (
         <div style={{ position: 'absolute', inset: 0, opacity: strength }}>
-          <div style={{ position: 'absolute', left: -300, top: 420, width: 900, height: 900, borderRadius: '50%', background: t.glow, opacity: t.dark ? 0.28 : 0.35, filter: 'blur(160px)' }} />
-          <div style={{ position: 'absolute', right: -320, top: 1350, width: 1000, height: 1000, borderRadius: '50%', background: t.accent, opacity: t.dark ? 0.2 : 0.3, filter: 'blur(180px)' }} />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: `linear-gradient(${t.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.045)'} 2px, transparent 2px), linear-gradient(90deg, ${t.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.045)'} 2px, transparent 2px)`,
-              backgroundSize: '86px 86px',
-              maskImage: 'radial-gradient(90% 60% at 50% 35%, #000 0%, transparent 80%)',
-              WebkitMaskImage: 'radial-gradient(90% 60% at 50% 35%, #000 0%, transparent 80%)',
-            }}
-          />
+          <div style={{ position: 'absolute', left: -380, top: 260, width: 1000, height: 1000, borderRadius: '50%', background: t.glow, opacity: t.dark ? 0.22 : 0.25, filter: 'blur(200px)' }} />
+          <div style={{ position: 'absolute', right: -420, top: 1500, width: 1100, height: 1100, borderRadius: '50%', background: t.glow, opacity: t.dark ? 0.18 : 0.2, filter: 'blur(220px)' }} />
         </div>
       )}
       {(texture === 'grain' || texture === 'both') && (
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: GRAIN, backgroundSize: '300px 300px', opacity: 0.35 * strength, mixBlendMode: t.dark ? 'screen' : 'multiply' }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: GRAIN, backgroundSize: '300px 300px', opacity: 0.3 * strength, mixBlendMode: t.dark ? 'screen' : 'multiply' }} />
       )}
 
-      <div style={{ position: 'absolute', left: 90, right: 90, top: 200, textAlign: 'center' }}>
-        <div
-          style={{
-            color: t.headline,
-            fontSize: state.headlineSize,
-            fontWeight: state.headlineWeight,
-            lineHeight: 1.06,
-            letterSpacing: state.font === 'serif' ? '-0.01em' : '-0.035em',
-          }}
-        >
-          <Rich text={frame.headline} accent={t.accent} />
-        </div>
-        {frame.subtitle && (
-          <div style={{ marginTop: 44, color: t.subtitle, fontSize: state.subtitleSize, fontWeight: state.subtitleWeight, lineHeight: 1.3, letterSpacing: '-0.01em' }}>
-            {frame.subtitle}
-          </div>
-        )}
+      <div
+        style={{
+          position: 'absolute',
+          left: 70,
+          right: 70,
+          top: state.topPadding,
+          textAlign: 'center',
+          color: t.headline,
+          fontSize: state.headlineSize,
+          fontWeight: state.headlineWeight,
+          lineHeight: 1.08,
+          letterSpacing: `${state.letterSpacing}em`,
+          whiteSpace: 'pre-line',
+        }}
+      >
+        {frame.headline}
       </div>
 
-      <div style={{ position: 'absolute', left: phoneX, top: phoneY }}>
-        <Device width={phoneW} finish={state.finish} shadow={state.shadow} glow={state.glow} glowColor={t.glow}>
+      <div style={{ position: 'absolute', left: phone.x, top: phone.y }}>
+        <Device metrics={phone} finish={state.finish} shadow={state.shadow} glow={state.glow} glowColor={t.glow}>
           {image ? (
             <img src={image} alt="" style={{ width: SCREEN_PT.width, height: SCREEN_PT.height, objectFit: 'cover', display: 'block' }} />
           ) : (
@@ -116,9 +94,7 @@ const Frame = forwardRef(function Frame({ state, frame, image }, ref) {
         </Device>
       </div>
 
-      {state.showCallouts && !image && Screen?.Callout && (
-        <Screen.Callout phone={{ x: phoneX, y: phoneY, w: phoneW }} theme={t} shadow={state.shadow} />
-      )}
+      {state.showCallouts && !image && Screen?.Callout && <Screen.Callout phone={phone} shadow={state.shadow} />}
     </div>
   );
 });
