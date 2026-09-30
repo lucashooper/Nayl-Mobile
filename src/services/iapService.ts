@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import sessionService from './sessionService';
+import { paywallLog, describeError } from './paywallLog';
 
 export type IAPPackage = import('react-native-purchases').PurchasesPackage;
 type PurchasesOffering = import('react-native-purchases').PurchasesOffering;
@@ -62,6 +63,25 @@ function hasProAccess(customerInfo: CustomerInfo): boolean {
   return customerInfo.entitlements.active[PRO_ENTITLEMENT_ID]?.isActive === true;
 }
 
+/** What the paywall logs about a CustomerInfo: enough to see why access was (not) granted. */
+function describeCustomerInfo(customerInfo: CustomerInfo): Record<string, unknown> {
+  const pro = customerInfo.entitlements.active[PRO_ENTITLEMENT_ID];
+  return {
+    appUserId: customerInfo.originalAppUserId,
+    activeEntitlements: Object.keys(customerInfo.entitlements.active),
+    activeSubscriptions: customerInfo.activeSubscriptions,
+    pro: pro
+      ? {
+          productId: pro.productIdentifier,
+          periodType: pro.periodType,
+          isSandbox: pro.isSandbox,
+          expires: pro.expirationDate,
+          willRenew: pro.willRenew,
+        }
+      : null,
+  };
+}
+
 class IAPService {
   private initialized = false;
 
@@ -74,6 +94,7 @@ class IAPService {
 
     const Purchases = getPurchasesModule()?.default;
     if (!Purchases) {
+      paywallLog('RevenueCat module unavailable', { expoGo: isExpoGo() });
       if (__DEV__ && isExpoGo()) {
         console.warn('RevenueCat is unavailable in Expo Go. Email login still works for UI testing.');
       }
@@ -81,6 +102,7 @@ class IAPService {
     }
 
     if (!isPurchasesEnabled()) {
+      paywallLog('RevenueCat disabled: no API key for this platform', { platform: Platform.OS });
       if (__DEV__) {
         console.warn(
           Platform.OS === 'android'
@@ -101,7 +123,9 @@ class IAPService {
       }
       Purchases.configure({ apiKey });
       this.initialized = true;
+      paywallLog('RevenueCat configured', { platform: Platform.OS });
     } catch (error) {
+      paywallLog('RevenueCat configure FAILED', describeError(error));
       console.error('RevenueCat initialization error:', error);
     }
   }
@@ -171,13 +195,31 @@ class IAPService {
   async getOfferings(): Promise<PurchasesOffering | null> {
     try {
       await this.ensurePurchaseReady();
-      if (!this.initialized) return null;
+      if (!this.initialized) {
+        paywallLog('offerings: RevenueCat not initialised');
+        return null;
+      }
       const Purchases = getPurchasesModule()?.default;
       if (!Purchases) return null;
       const offerings = await Purchases.getOfferings();
+      if (!offerings.current) {
+        paywallLog('offerings: no current offering', { all: Object.keys(offerings.all) });
+      } else {
+        paywallLog('offerings: loaded', {
+          offering: offerings.current.identifier,
+          packages: offerings.current.availablePackages.map((p) => ({
+            id: p.identifier,
+            product: p.product.identifier,
+            price: p.product.priceString,
+            intro: p.product.introPrice
+              ? `${p.product.introPrice.priceString} for ${p.product.introPrice.periodNumberOfUnits} ${p.product.introPrice.periodUnit}`
+              : null,
+          })),
+        });
+      }
       return offerings.current;
     } catch (error) {
-      console.error('Error fetching offerings:', error);
+      paywallLog('offerings: load FAILED', describeError(error));
       return null;
     }
   }
@@ -196,8 +238,10 @@ class IAPService {
         throw new Error('Purchases are not configured.');
       }
 
+      paywallLog('purchase: start', { product: pkg.product.identifier });
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       let isPro = hasProAccess(customerInfo);
+      paywallLog('purchase: store returned', { isPro, ...describeCustomerInfo(customerInfo) });
 
       if (!isPro) {
         const synced = await this.syncCustomerInfo();
@@ -206,18 +250,18 @@ class IAPService {
         }
       }
 
-      if (__DEV__) {
-        console.log('[IAP] Purchase entitlements:', Object.keys(customerInfo.entitlements.active));
-        console.log('[IAP] Active subscriptions:', customerInfo.activeSubscriptions);
-        console.log('[IAP] isPro:', isPro);
-      }
+      paywallLog(isPro ? 'purchase: SUCCESS, pro active' : "purchase: completed but no 'pro' entitlement", {
+        product: pkg.product.identifier,
+      });
 
       await this.cacheProStatus(isPro);
       return { success: isPro, customerInfo };
     } catch (error: any) {
       if (error.userCancelled) {
+        paywallLog('purchase: cancelled by user', { product: pkg.product.identifier });
         return { success: false, userCancelled: true };
       }
+      paywallLog('purchase: ERROR', { product: pkg.product.identifier, ...describeError(error) });
 
       const { PURCHASES_ERROR_CODE } = getPurchasesModule() ?? {};
       const alreadyOwned =
@@ -227,6 +271,7 @@ class IAPService {
       if (alreadyOwned || error.message?.toLowerCase().includes('already')) {
         const synced = await this.syncCustomerInfo();
         if (synced && hasProAccess(synced)) {
+          paywallLog('purchase: already owned, pro active after sync', describeCustomerInfo(synced));
           await this.cacheProStatus(true);
           return { success: true, customerInfo: synced };
         }
@@ -234,6 +279,7 @@ class IAPService {
 
       const synced = await this.syncCustomerInfo();
       if (synced && hasProAccess(synced)) {
+        paywallLog('purchase: errored but pro active after sync', describeCustomerInfo(synced));
         await this.cacheProStatus(true);
         return { success: true, customerInfo: synced };
       }
@@ -251,12 +297,14 @@ class IAPService {
       }
       const Purchases = getPurchasesModule()?.default;
       if (!Purchases) return { success: false };
+      paywallLog('restore: start');
       const customerInfo = await Purchases.restorePurchases();
       const isPro = hasProAccess(customerInfo);
+      paywallLog('restore: result', { isPro, ...describeCustomerInfo(customerInfo) });
       await this.cacheProStatus(isPro);
       return { success: isPro, customerInfo };
     } catch (error) {
-      console.error('Restore purchases error:', error);
+      paywallLog('restore: ERROR', describeError(error));
       return { success: false };
     }
   }
@@ -280,18 +328,23 @@ class IAPService {
       await this.ensurePurchaseReady();
     } catch (error) {
       // logIn can fail offline; the SDK keeps the last identified user.
-      if (__DEV__) console.warn('[IAP] ensurePurchaseReady failed:', error);
+      paywallLog('entitlement check: logIn failed, using SDK identity', describeError(error));
     }
-    if (!this.initialized) return false;
+    if (!this.initialized) {
+      paywallLog('entitlement check: RevenueCat not initialised -> NO access');
+      return false;
+    }
 
     try {
       const Purchases = getPurchasesModule()?.default;
       if (!Purchases) return false;
       const customerInfo = await Purchases.getCustomerInfo();
       const isPro = hasProAccess(customerInfo);
+      paywallLog(`entitlement check: pro ${isPro ? 'ACTIVE' : 'not active'}`, describeCustomerInfo(customerInfo));
       await this.cacheProStatus(isPro);
       return isPro;
-    } catch {
+    } catch (error) {
+      paywallLog('entitlement check: getCustomerInfo FAILED -> NO access', describeError(error));
       return false;
     }
   }

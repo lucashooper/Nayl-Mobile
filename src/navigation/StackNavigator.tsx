@@ -3,6 +3,7 @@ import { createStackNavigator, CardStyleInterpolators, TransitionSpecs } from '@
 import { Easing, View } from 'react-native';
 import sessionService from '../services/sessionService';
 import { hasAppAccess } from '../services/accessGate';
+import { paywallLog } from '../services/paywallLog';
 
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
@@ -88,8 +89,9 @@ export function HomeStack() {
         if (!cancelled) setInitialRoute('Onboarding');
         return;
       }
-      const allowed = await hasAppAccess().catch(() => false);
+      const allowed = await hasAppAccess('app launch, returning user');
       if (cancelled) return;
+      paywallLog(allowed ? 'navigate into app: launch -> HomeMain' : 'launch -> paywall (no access)');
       setPaywallOnly(!allowed);
       setInitialRoute(allowed ? 'HomeMain' : 'Onboarding');
     })();
