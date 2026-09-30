@@ -1,31 +1,40 @@
 import { toCanvas, getFontEmbedCSS } from 'html-to-image';
 import JSZip from 'jszip';
-import { CANVAS } from './config.js';
+import { TARGETS } from './config.js';
 import { encodePng } from './png.js';
 
 export const DPI = 300;
 
-// Renders one full-size frame node to a 1290 x 2796 RGB PNG with 300 DPI metadata.
-export async function renderFrame(node, fontEmbedCSS) {
+// Renders one full-size frame node to an RGB PNG at the target's exact pixel size
+// (1242 x 2688, 1290 x 2796 or 2048 x 2732) with 300 DPI metadata.
+export async function renderFrame(node, target, fontEmbedCSS) {
+  const { width, height } = TARGETS[target];
   await document.fonts.ready;
   const opts = {
-    width: CANVAS.width,
-    height: CANVAS.height,
-    canvasWidth: CANVAS.width,
-    canvasHeight: CANVAS.height,
+    width,
+    height,
+    canvasWidth: width,
+    canvasHeight: height,
     pixelRatio: 1,
     skipAutoScale: true,
     fontEmbedCSS,
   };
   const canvas = await toCanvas(node, opts);
-  if (canvas.width !== CANVAS.width || canvas.height !== CANVAS.height) {
-    throw new Error(`Rendered ${canvas.width}x${canvas.height}, expected ${CANVAS.width}x${CANVAS.height}`);
+  if (canvas.width !== width || canvas.height !== height) {
+    throw new Error(`Rendered ${canvas.width}x${canvas.height}, expected ${width}x${height}`);
   }
   return encodePng(canvas, DPI);
 }
 
-export function fileName(index, frame) {
-  return `nayl-${String(index + 1).padStart(2, '0')}-${frame.id}-1290x2796.png`;
+export function fileName(index, frame, target) {
+  const { device, width, height } = TARGETS[target];
+  return `nayl-${device}-${String(index + 1).padStart(2, '0')}-${frame.id}-${width}x${height}.png`;
+}
+
+function zipName(target) {
+  const { device, label, width, height } = TARGETS[target];
+  const inches = /[\d.]+/.exec(label)[0];
+  return `nayl-app-store-${device}-${inches}in-${width}x${height}.zip`;
 }
 
 function save(blob, name) {
@@ -39,8 +48,8 @@ function save(blob, name) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-export async function exportOne(node, index, frame) {
-  save(await renderFrame(node, await getFontEmbedCSS(node)), fileName(index, frame));
+export async function exportOne(node, index, frame, target) {
+  save(await renderFrame(node, target, await getFontEmbedCSS(node)), fileName(index, frame, target));
 }
 
 // True when the studio is served by its own dev server, which can write files.
@@ -66,12 +75,12 @@ function zipFolder(dir) {
 
 // mode: 'disk' (write into `dir` via the dev server), 'zip' (one download) or
 // 'files' (five PNG downloads). Returns where the files went, for the status line.
-export async function exportAll(nodes, frames, { mode, dir }, onProgress) {
+export async function exportAll(nodes, frames, target, { mode, dir }, onProgress) {
   const fontEmbedCSS = await getFontEmbedCSS(nodes[0]);
   const rendered = [];
   for (let i = 0; i < nodes.length; i++) {
     onProgress?.(i, nodes.length);
-    rendered.push({ name: fileName(i, frames[i]), blob: await renderFrame(nodes[i], fontEmbedCSS) });
+    rendered.push({ name: fileName(i, frames[i], target), blob: await renderFrame(nodes[i], target, fontEmbedCSS) });
   }
   onProgress?.(nodes.length, nodes.length);
 
@@ -90,6 +99,6 @@ export async function exportAll(nodes, frames, { mode, dir }, onProgress) {
   const zip = new JSZip();
   const folder = zipFolder(dir);
   for (const { name, blob } of rendered) zip.file(folder ? `${folder}/${name}` : name, blob);
-  save(await zip.generateAsync({ type: 'blob' }), 'nayl-app-store-6.7in-1290x2796.zip');
+  save(await zip.generateAsync({ type: 'blob' }), zipName(target));
   return '';
 }

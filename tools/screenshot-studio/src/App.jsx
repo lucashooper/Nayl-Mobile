@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { BACKGROUNDS, CANVAS, DEFAULT_EXPORT_DIR, DEFAULT_STATE, FINISHES, FONTS, SCREENS, TEXTURES, WEIGHTS } from './config.js';
+import { BACKGROUNDS, DEFAULT_EXPORT_DIR, DEFAULT_STATE, FINISHES, FONTS, IPAD_TARGET, IPHONE_SIZES, SCREENS, TARGETS, TEXTURES, WEIGHTS } from './config.js';
 import Frame, { resolveTheme } from './components/Frame.jsx';
 import { canSaveToDisk, exportAll, exportOne } from './export.js';
 
 const STORE_KEY = 'nayl-screenshot-studio-v1';
 const IMAGE_KEY = (id) => `nayl-screenshot-studio-img-${id}`;
-const PREVIEW_W = 250;
+const PREVIEW_H = 540;
+// Real-capture uploads are kept per device: iPhone under the frame id, iPad under ipad-<id>.
+const captureKey = (device, id) => (device === 'ipad' ? `ipad-${id}` : id);
 
 // Nail Progress photos dropped into tools/screenshot-studio/nail-photos/ as
 // day-1 and day-14 (.jpg/.png/.webp) are picked up automatically.
@@ -29,10 +31,11 @@ function load() {
 
 function loadImages() {
   const out = {};
-  for (const f of [...DEFAULT_STATE.frames, ...NAIL_TILE_DAYS.map((d) => ({ id: nailKey(d) }))]) {
+  const ids = [...DEFAULT_STATE.frames.flatMap((f) => [f.id, captureKey('ipad', f.id)]), ...NAIL_TILE_DAYS.map(nailKey)];
+  for (const id of ids) {
     try {
-      const v = localStorage.getItem(IMAGE_KEY(f.id));
-      if (v) out[f.id] = v;
+      const v = localStorage.getItem(IMAGE_KEY(id));
+      if (v) out[id] = v;
     } catch {}
   }
   return out;
@@ -44,7 +47,7 @@ export default function App() {
   const [busy, setBusy] = useState('');
   const [note, setNote] = useState('');
   const [diskOk, setDiskOk] = useState(false);
-  const nodes = useRef([]);
+  const nodes = useRef({});
 
   useEffect(() => {
     canSaveToDisk().then(setDiskOk);
@@ -97,20 +100,47 @@ export default function App() {
     }
   };
 
-  const doExportAll = () =>
+  const iphone = TARGETS[state.iphoneSize] ? state.iphoneSize : DEFAULT_STATE.iphoneSize;
+  const nodesFor = (target) => (nodes.current[target] ??= []);
+
+  const doExportAll = (target) =>
     run('Rendering…', async () => {
-      const where = await exportAll(nodes.current, state.frames, { mode, dir: state.exportDir }, (i, n) =>
-        setBusy(i < n ? `Rendering ${i + 1} of ${n}…` : 'Saving…'),
+      const { label, width, height } = TARGETS[target];
+      const where = await exportAll(nodesFor(target), state.frames, target, { mode, dir: state.exportDir }, (i, n) =>
+        setBusy(i < n ? `Rendering ${label} ${i + 1} of ${n}…` : 'Saving…'),
       );
-      setNote(`Exported ${state.frames.length} PNGs at ${CANVAS.width} × ${CANVAS.height}, 300 DPI${where ? ` to ${where}` : ''}.`);
+      setNote(`Exported ${state.frames.length} ${label} PNGs at ${width} × ${height}, 300 DPI${where ? ` to ${where}` : ''}.`);
     });
+
+  const strip = (target) => {
+    const { device } = TARGETS[target];
+    return state.frames.map((f, i) => (
+      <FrameCard
+        key={f.id}
+        index={i}
+        frame={f}
+        state={state}
+        target={target}
+        image={images[captureKey(device, f.id)]}
+        photos={photos}
+        nodeRef={(el) => (nodesFor(target)[i] = el)}
+        onFile={(file) => onFile(captureKey(device, f.id), file)}
+        onClearImage={() => setImage(captureKey(device, f.id), null)}
+        onScreen={(screen) => setFrame(i, { screen })}
+        onDownload={() => run(`Rendering ${i + 1}…`, () => exportOne(nodesFor(target)[i], i, f, target))}
+        busy={!!busy}
+      />
+    ));
+  };
 
   return (
     <div className="studio">
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-title">Nayl Screenshot Studio</div>
-          <div className="brand-sub">App Store 6.7″ · {CANVAS.width} × {CANVAS.height}</div>
+          <div className="brand-sub">
+            iPhone {TARGETS[iphone].width} × {TARGETS[iphone].height} · iPad {TARGETS[IPAD_TARGET].width} × {TARGETS[IPAD_TARGET].height}
+          </div>
         </div>
 
         <Section title="Typography">
@@ -177,7 +207,7 @@ export default function App() {
               </button>
             ))}
           </div>
-          <div className="hint">iPhone 16 Pro</div>
+          <div className="hint">iPhone 16 Pro and iPad Pro 12.9″</div>
           <label className="check">
             <input type="checkbox" checked={state.shadow} onChange={(e) => set({ shadow: e.target.checked })} /> Shadow
           </label>
@@ -187,7 +217,7 @@ export default function App() {
           <label className="check">
             <input type="checkbox" checked={state.showCallouts} onChange={(e) => set({ showCallouts: e.target.checked })} /> Floating call-out cards
           </label>
-          <Field label={`iPhone frame scale · ${state.phoneScale}%`}>
+          <Field label={`Device frame scale · ${state.phoneScale}%`}>
             <input type="range" min="60" max="125" value={state.phoneScale} onChange={(e) => set({ phoneScale: +e.target.value })} />
           </Field>
         </Section>
@@ -216,10 +246,10 @@ export default function App() {
           <Field label={`Top padding (canvas top to title) · ${state.topPadding}px`}>
             <input type="range" min="60" max="600" step="5" value={state.topPadding} onChange={(e) => set({ topPadding: +e.target.value })} />
           </Field>
-          <Field label={`Bottom padding (phone to canvas bottom) · ${state.bottomPadding}px`}>
+          <Field label={`Bottom padding (device to canvas bottom) · ${state.bottomPadding}px`}>
             <input type="range" min="-600" max="500" step="5" value={state.bottomPadding} onChange={(e) => set({ bottomPadding: +e.target.value })} />
           </Field>
-          <div className="hint">Negative bottom padding lets the phone run off the bottom edge.</div>
+          <div className="hint">Padding is in iPhone 6.7″ pixels and scales with each export size. Negative bottom padding lets the device run off the bottom edge.</div>
         </Section>
 
         <Section title="Headlines">
@@ -260,7 +290,10 @@ export default function App() {
             onClick={() => {
               if (!confirm('Reset all text, colours and uploaded screens to the defaults?')) return;
               setState(DEFAULT_STATE);
-              DEFAULT_STATE.frames.forEach((f) => setImage(f.id, null));
+              DEFAULT_STATE.frames.forEach((f) => {
+                setImage(f.id, null);
+                setImage(captureKey('ipad', f.id), null);
+              });
               NAIL_TILE_DAYS.forEach((d) => setImage(nailKey(d), null));
             }}
           >
@@ -272,46 +305,59 @@ export default function App() {
       <main className="stage">
         <header className="toolbar">
           <div>
-            <div className="toolbar-title">5 frames · 6.7″ iPhone · PNG @ 300 DPI</div>
+            <div className="toolbar-title">5 frames · PNG @ 300 DPI</div>
             <div className="toolbar-note">{busy || note || 'Drop a real screen capture on any frame to replace its built-in screen.'}</div>
           </div>
-          <button className="primary" disabled={!!busy} onClick={doExportAll}>
-            {busy ? busy : 'Export All'}
-          </button>
         </header>
 
-        <div className="strip">
-          {state.frames.map((f, i) => (
-            <FrameCard
-              key={f.id}
-              index={i}
-              frame={f}
-              state={state}
-              image={images[f.id]}
-              photos={photos}
-              nodeRef={(el) => (nodes.current[i] = el)}
-              onFile={(file) => onFile(f.id, file)}
-              onClearImage={() => setImage(f.id, null)}
-              onScreen={(screen) => setFrame(i, { screen })}
-              onDownload={() => run(`Rendering ${i + 1}…`, () => exportOne(nodes.current[i], i, f))}
-              busy={!!busy}
-            />
-          ))}
-        </div>
+        <section className="device-section" data-section="iphone">
+          <div className="section-head">
+            <div>
+              <h2>iPhone</h2>
+              <select value={iphone} onChange={(e) => set({ iphoneSize: e.target.value })} title="iPhone export size">
+                {IPHONE_SIZES.map((k) => (
+                  <option key={k} value={k}>
+                    {TARGETS[k].label} · {TARGETS[k].width} × {TARGETS[k].height}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button className="primary" disabled={!!busy} onClick={() => doExportAll(iphone)}>
+              Export All iPhone
+            </button>
+          </div>
+          <div className="strip">{strip(iphone)}</div>
+        </section>
+
+        <section className="device-section" data-section="ipad">
+          <div className="section-head">
+            <div>
+              <h2>iPad</h2>
+              <span className="size">
+                {TARGETS[IPAD_TARGET].label} · {TARGETS[IPAD_TARGET].width} × {TARGETS[IPAD_TARGET].height}
+              </span>
+            </div>
+            <button className="primary" disabled={!!busy} onClick={() => doExportAll(IPAD_TARGET)}>
+              Export All iPad
+            </button>
+          </div>
+          <div className="strip">{strip(IPAD_TARGET)}</div>
+        </section>
       </main>
     </div>
   );
 }
 
-function FrameCard({ index, frame, state, image, photos, nodeRef, onFile, onClearImage, onScreen, onDownload, busy }) {
+function FrameCard({ index, frame, state, target, image, photos, nodeRef, onFile, onClearImage, onScreen, onDownload, busy }) {
   const [over, setOver] = useState(false);
-  const scale = PREVIEW_W / CANVAS.width;
+  const size = TARGETS[target];
+  const scale = PREVIEW_H / size.height;
   const input = useRef(null);
   return (
     <div className="card">
       <div
         className={`preview ${over ? 'over' : ''}`}
-        style={{ width: PREVIEW_W, height: CANVAS.height * scale }}
+        style={{ width: size.width * scale, height: PREVIEW_H }}
         onDragOver={(e) => {
           e.preventDefault();
           setOver(true);
@@ -324,10 +370,10 @@ function FrameCard({ index, frame, state, image, photos, nodeRef, onFile, onClea
         }}
       >
         <div style={{ transform: `scale(${scale})`, transformOrigin: '0 0' }}>
-          <Frame ref={nodeRef} state={state} frame={frame} image={image} photos={photos} />
+          <Frame ref={nodeRef} state={state} frame={frame} target={target} image={image} photos={photos} />
         </div>
       </div>
-      <div className="card-meta">
+      <div className="card-meta" style={{ width: Math.max(250, size.width * scale) }}>
         <div className="card-title">
           {index + 1}. {frame.name}
         </div>
@@ -341,8 +387,8 @@ function FrameCard({ index, frame, state, image, photos, nodeRef, onFile, onClea
         <div className="card-actions">
           <button onClick={() => input.current.click()}>{image ? 'Replace capture' : 'Use real capture'}</button>
           {image && <button onClick={onClearImage}>Use built-in</button>}
-          <button disabled={busy} onClick={onDownload}>
-            PNG
+          <button disabled={busy} onClick={onDownload} title={`Download ${size.width} × ${size.height} PNG`}>
+            PNG {size.width}×{size.height}
           </button>
         </div>
         <input ref={input} type="file" accept="image/*" hidden onChange={(e) => onFile(e.target.files[0])} />

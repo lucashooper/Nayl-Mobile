@@ -1,4 +1,4 @@
-import { C, APP_FONT, Page, TabBar, Icon, Ring, WeekRow, PanicPill } from './kit.jsx';
+import { C, APP_FONT, Page, TabBar, Icon, Ring, WeekRow, PanicPill, useScreen } from './kit.jsx';
 import NaylOrb from './NaylOrb.jsx';
 import Squircle from './Squircle.jsx';
 import flameIcon from '@app-assets/new-flame-icon.webp';
@@ -23,19 +23,19 @@ import landmark from '@app-assets/bigger-achievement-icons/Landmark-280px.png';
 // Floating call-out cards, Cal AI style: a wide card that overhangs the phone
 // slightly on both sides. Content is laid out in points (like the screens) and
 // scaled up; `top` is the screen point the card's top edge lines up with.
-const CARD_PT = 340;
-const CALLOUT_SCALE = 3.2; // x phone width / 1000
+// The device metrics carry the call-out scale and card width (`phone.callout`,
+// `phone.cardPt`): 3.2 x phone width / 1000 and 340pt on iPhone.
 
 // Every call-out casts the same shadow in canvas pixels: 0 20px 40px rgba(0,0,0,0.5).
 // Call-outs are drawn in points and scaled, so the shadow is converted back to points.
 function shadowFor(phone, on) {
   if (!on) return '';
-  const s = CALLOUT_SCALE * (phone.width / 1000);
+  const s = phone.callout;
   return `drop-shadow(0 ${20 / s}px ${20 / s}px rgba(0,0,0,0.5))`; // drop-shadow blur = box-shadow blur / 2
 }
 
-function Callout({ phone, top, width = CARD_PT, children }) {
-  const scale = CALLOUT_SCALE * (phone.width / 1000);
+function Callout({ phone, top, width = phone.cardPt, children }) {
+  const scale = phone.callout;
   return (
     <div
       style={{
@@ -77,6 +77,7 @@ function ActionButton({ icon, label }) {
 }
 
 function HomeScreen() {
+  const { tablet } = useScreen();
   return (
     <Page>
       <div style={{ position: 'absolute', top: 62, left: 24, right: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -90,7 +91,7 @@ function HomeScreen() {
           <img src={trophyIcon} alt="" style={{ width: 32, height: 32, marginLeft: 8 }} />
         </div>
       </div>
-      <div style={{ position: 'absolute', top: 118, left: 34, right: 34 }}>
+      <div style={{ position: 'absolute', top: 118, left: tablet ? 120 : 34, right: tablet ? 120 : 34 }}>
         <WeekRow done={4} today={4} />
       </div>
       <div style={{ position: 'absolute', top: 178, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
@@ -103,7 +104,7 @@ function HomeScreen() {
           Bite-Free
         </div>
       </div>
-      <div style={{ position: 'absolute', top: 508, left: 32, right: 32, display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ position: 'absolute', top: 508, left: tablet ? 120 : 32, right: tablet ? 120 : 32, display: 'flex', justifyContent: 'space-between' }}>
         <ActionButton icon="create" label="Streak" />
         <ActionButton icon="bulb" label="Tips" />
         <ActionButton icon="heart" label="Meditate" />
@@ -141,6 +142,7 @@ function PanicRow({ icon, text }) {
 }
 
 function PanicScreen() {
+  const { tablet } = useScreen();
   const btn = (bg, label) => (
     <div style={{ padding: 16, borderRadius: 16, background: bg, textAlign: 'center', fontSize: 16, fontWeight: 600, textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>{label}</div>
   );
@@ -168,7 +170,7 @@ function PanicScreen() {
         <PanicRow icon={anxietyIcon} text="Biting your nails can reinforce anxiety." />
         <div style={{ textAlign: 'center', fontSize: 14, color: '#A9A9A9', marginTop: 10 }}>See images (Trigger warning)</div>
       </div>
-      <div style={{ position: 'absolute', top: 640, left: 24, right: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ position: 'absolute', top: 640, left: 24, right: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)', display: 'grid', gridTemplateColumns: tablet ? '1fr 1fr' : '1fr', gap: 16 }}>
         {btn('linear-gradient(180deg, #A3E635, #16A34A)', 'Keep Going')}
         {btn('linear-gradient(180deg, #EF4444, #991B1B)', "I'm getting urges")}
       </div>
@@ -180,7 +182,7 @@ function PanicCallout({ phone, shadow }) {
   return (
     <Callout phone={phone} top={-40}>
       <div style={{ filter: shadowFor(phone, shadow) || 'none' }}>
-        <PanicPill width={CARD_PT} />
+        <PanicPill width={phone.cardPt} />
       </div>
     </Callout>
   );
@@ -209,6 +211,7 @@ function RecoveryRing({ id }) {
 
 // `popped`: the ring is drawn enlarged by ProgressCallout, so leave its slot empty here.
 function ProgressScreen({ popped }) {
+  const pt = useScreen();
   return (
     <Page>
       <div style={{ position: 'absolute', top: 62, left: 20, right: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -216,7 +219,7 @@ function ProgressScreen({ popped }) {
         <span style={{ fontSize: 30, fontWeight: 700 }}>Analytics</span>
         <Icon name="share" size={26} width={1.8} />
       </div>
-      <div style={{ position: 'absolute', top: RING_TOP, left: (393 - RING_PT) / 2, visibility: popped ? 'hidden' : 'visible' }}>
+      <div style={{ position: 'absolute', top: RING_TOP, left: (pt.width - RING_PT) / 2, visibility: popped ? 'hidden' : 'visible' }}>
         <RecoveryRing id="recovery" />
       </div>
       <div style={{ position: 'absolute', top: RING_TOP + RING_PT + 40, left: 24, right: 24, textAlign: 'center' }}>
@@ -237,7 +240,7 @@ export const RING_POP_SCALE = 1.18;
 
 function ProgressCallout({ phone, shadow, popScale = RING_POP_SCALE }) {
   const scale = phone.scale * popScale;
-  const centreX = phone.x + phone.inset + (393 / 2) * phone.scale;
+  const centreX = phone.x + phone.inset + (phone.pt.width / 2) * phone.scale;
   const centreY = phone.y + phone.inset + (RING_TOP + RING_PT / 2) * phone.scale;
   return (
     <div
@@ -455,6 +458,7 @@ function PhotoPlaceholder({ size = 26 }) {
 }
 
 function NailsScreen({ photos = {} }) {
+  const { tablet } = useScreen();
   return (
     <Page>
       <div style={{ position: 'absolute', top: 74, left: 24, right: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -477,9 +481,9 @@ function NailsScreen({ photos = {} }) {
           </div>
         ))}
       </div>
-      <div style={{ position: 'absolute', top: 268, left: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ position: 'absolute', top: 268, left: 24, right: 24, display: 'grid', gridTemplateColumns: tablet ? '1fr 1fr' : '1fr', gap: 16 }}>
         {NAIL_DAYS.map(([day, date, focus]) => (
-          <div key={day} style={{ position: 'relative', height: 206, borderRadius: 12, overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
+          <div key={day} style={{ position: 'relative', height: tablet ? 400 : 206, borderRadius: 12, overflow: 'hidden', background: 'rgba(255,255,255,0.05)' }}>
             {photos[day] ? <img src={photos[day]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: focus, display: 'block' }} /> : <PhotoPlaceholder />}
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '10px 12px', paddingTop: 28, background: 'linear-gradient(180deg, transparent, rgba(0,0,0,0.8))', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <span style={{ fontSize: 20, fontWeight: 700 }}>Day {day}</span>

@@ -2,8 +2,18 @@
 
 A local React (Vite) editor for the App Store screenshots, in a Cal AI style: one bold
 solid-colour title, the phone below, and a floating card that overhangs the phone. It
-exports five 1290 × 2796 PNGs (6.7"/6.9" iPhone size): lossless, RGB with no alpha,
-with 300 DPI written into the PNG's pHYs chunk.
+has two sections, each exporting five PNGs at the exact App Store size: lossless, RGB with
+no alpha, with 300 DPI written into the PNG's pHYs chunk.
+
+- **iPhone**: 1242 × 2688 (6.5") by default. 1290 × 2796 (6.7"/6.9") is in the size menu
+  next to the section title.
+- **iPad**: 2048 × 2732 (12.9"/13" iPad Pro), in a thin-bezel iPad Pro frame. The screens
+  use a wider 640 pt layout (wider cards, side-by-side photos and buttons) instead of a
+  stretched phone column.
+
+Each frame is laid out on a fixed design canvas (1290 px wide for iPhone, 1536 for iPad) and
+scaled uniformly to the export width, so text, device and cards keep their proportions with
+no stretching or cropping. Pixel values in the controls refer to the 1290 px iPhone canvas.
 
 ## Run it
 
@@ -20,7 +30,7 @@ The editor opens at http://localhos## What's in the editor
   letter spacing (-0.05em to 0.1em) and a solid title colour (default #FFFFFF).
 - **Background**: Deep Violet (#0B0714 to #180D2B with a soft purple glow) by default, other
   presets, custom top/bottom/glow hex colours, and a soft mesh glow or grain texture.
-- **Device frame**: iPhone 16 Pro in Natural Titanium, Midnight or Starlight, with shadow and glow
+- **Device frame**: iPhone 16 Pro and iPad Pro in Natural Titanium, Midnight or Starlight, with shadow and glow
   toggles, frame scale, and optional floating call-out cards.
 - **Canvas padding**: top (canvas edge to title) and bottom (phone to canvas edge; negative lets
   the phone run off the bottom).
@@ -32,7 +42,8 @@ The editor opens at http://localhos## What's in the editor
     through `npm run dev`; the folder must be inside the repo.
   - *Download one ZIP*: the ZIP contains the export folder path with the five PNGs inside.
   - *Download 5 separate PNGs*.
-  Each frame also has its own **PNG** download button.
+  Each section has its own **Export All** button, and each frame its own **PNG** button, which
+  downloads at that section's exact size. Files are named `nayl-<iphone|ipad>-NN-<frame>-WxH.png`.
 
 Settings are saved in the browser (localStorage).
 
@@ -62,7 +73,7 @@ default, adjustable in the sidebar) so it pops out over the phone.
 
 To use a real capture instead, click **Use real capture** under a frame (or drop an image on it).
 Raw @3x simulator PNGs (1179 × 2556 from an iPhone 16 Pro, 1320 × 2868 from a Pro Max) are used
-as-is: the export renders at the native 1290 × 2796 with no upscaling and no lossy compression.
+as-is: the export renders at the target size with no lossy compression.
 At the default frame scale the screen area is about 924 px wide, so a 1179 px capture is scaled
 down, never up. The floating call-out is hidden on frames that use a real capture.
 
@@ -70,10 +81,10 @@ down, never up. The floating call-out is hidden on frames that use a real captur
 
 - `src/screens/` – the device-screen mocks, the ported orb, the floating call-outs and `Squircle.jsx` (iOS continuous-corner cards).
 - `studio-server.js` – the dev-server endpoint that writes exports into the repo.
-- `src/components/Frame.jsx` – one 1290 × 2796 frame (background, text, device, call-out).
-- `src/components/Device.jsx` – the iPhone 16 Pro frame.
+- `src/components/Frame.jsx` – one frame at an exact export size (background, text, device, call-out).
+- `src/components/Device.jsx` – the iPhone 16 Pro and iPad Pro frames.
 - `src/export.js`, `src/png.js` – rendering (html-to-image) and the RGB + 300 DPI PNG encoder.
-- `src/config.js` – fonts, background presets, finishes and the default text for each frame.
+- `src/config.js` – export sizes (`TARGETS`), fonts, background presets, finishes and the default text for each frame.
 
 The older single-page generator (`tools/app-store-screenshots/`) is still there; this studio replaces it
 for the redesigned 5-frame set.

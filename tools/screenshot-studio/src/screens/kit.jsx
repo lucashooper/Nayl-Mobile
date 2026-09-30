@@ -1,6 +1,15 @@
-// Shared building blocks for the device-screen mocks. Sizes are iPhone points
-// (393 x 852) and colours come from the app's midnight theme
-// (src/context/ThemeContext.tsx, src/screens/HomeScreen.tsx).
+import { createContext, useContext } from 'react';
+
+// Shared building blocks for the device-screen mocks. Sizes are points and colours
+// come from the app's midnight theme (src/context/ThemeContext.tsx, src/screens/HomeScreen.tsx).
+
+// Screen size in points. iPhone 16 Pro is 393 x 852. The iPad screen keeps the same
+// height in points but is 640 wide (the 2048 x 2732 aspect), so the same layouts
+// get wider cards and more breathing room instead of shrinking into a phone column.
+export const IPHONE_PT = { width: 393, height: 852, tablet: false };
+export const IPAD_PT = { width: 640, height: (640 * 2732) / 2048, tablet: true };
+export const ScreenSize = createContext(IPHONE_PT);
+export const useScreen = () => useContext(ScreenSize);
 
 export const C = {
   bg: '#020408',
@@ -26,12 +35,15 @@ const STARS = (() => {
 })();
 
 export function Page({ children, background, stars = true, starColor = '255,255,255' }) {
+  const pt = useScreen();
+  const sx = pt.width / 393;
+  const sy = pt.height / 852;
   return (
     <div
       style={{
         position: 'relative',
-        width: 393,
-        height: 852,
+        width: pt.width,
+        height: pt.height,
         overflow: 'hidden',
         fontFamily: APP_FONT,
         color: C.text,
@@ -40,7 +52,7 @@ export function Page({ children, background, stars = true, starColor = '255,255,
     >
       {stars &&
         STARS.map((s, i) => (
-          <div key={i} style={{ position: 'absolute', left: s.x, top: s.y, width: s.r * 2, height: s.r * 2, borderRadius: '50%', background: `rgba(${starColor},${s.o})` }} />
+          <div key={i} style={{ position: 'absolute', left: s.x * sx, top: s.y * sy, width: s.r * 2, height: s.r * 2, borderRadius: '50%', background: `rgba(${starColor},${s.o})` }} />
         ))}
       {children}
       <StatusBar />

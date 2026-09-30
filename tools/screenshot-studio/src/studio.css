@@ -46,11 +46,16 @@ button.ghost, .card-actions button { background: #0e0f12; border: 1px solid #2a2
 button.ghost:hover, .card-actions button:hover { border-color: #4a4f5a; }
 button.link { background: none; border: none; color: #7fb2ff; cursor: pointer; padding: 0; font-size: 12px; }
 
-.stage { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 24px; border-bottom: 1px solid #23252b; background: #111216; }
+.stage { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; }
+.toolbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 24px; border-bottom: 1px solid #23252b; background: #111216; }
 .toolbar-title { font-weight: 600; }
 .toolbar-note { color: #8b8f99; font-size: 12px; margin-top: 2px; }
-.strip { flex: 1; overflow: auto; display: flex; gap: 22px; padding: 24px; align-items: flex-start; }
+.strip { flex-shrink: 0; overflow-x: auto; display: flex; gap: 22px; padding: 24px; align-items: flex-start; }
+.device-section { border-bottom: 1px solid #23252b; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px 0; }
+.section-head > div { display: flex; align-items: center; gap: 12px; }
+.section-head h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.section-head .size { color: #8b8f99; font-size: 12px; }
 .card { flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
 .preview { position: relative; overflow: hidden; border-radius: 14px; box-shadow: 0 10px 30px #0008; outline: 1px solid #23252b; }
 .preview.over { outline: 3px dashed #7fb2ff; }

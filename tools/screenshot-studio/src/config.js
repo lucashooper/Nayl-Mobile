@@ -1,4 +1,13 @@
-export const CANVAS = { width: 1290, height: 2796 }; // 6.7" / 6.9" iPhone App Store size
+// Export sizes. Each frame is laid out on a `design`-px-wide canvas and scaled by
+// width / design into the exact export size, so text, device and call-outs keep their
+// proportions (no stretching, no cropping) whatever the target resolution.
+export const TARGETS = {
+  'iphone-6.5': { device: 'iphone', label: 'iPhone 6.5″', width: 1242, height: 2688, design: 1290 },
+  'iphone-6.9': { device: 'iphone', label: 'iPhone 6.7″ / 6.9″', width: 1290, height: 2796, design: 1290 },
+  'ipad-13': { device: 'ipad', label: 'iPad 12.9″ / 13″', width: 2048, height: 2732, design: 1536 },
+};
+export const IPHONE_SIZES = ['iphone-6.5', 'iphone-6.9'];
+export const IPAD_TARGET = 'ipad-13';
 
 export const FONTS = {
   modern: { label: 'Modern Sans', stack: "'Manrope Variable', 'Inter Variable', system-ui, sans-serif" },
@@ -46,6 +55,7 @@ export const DEFAULT_EXPORT_DIR = './assets/app-store-screenshots/';
 
 export const DEFAULT_STATE = {
   version: 3,
+  iphoneSize: 'iphone-6.5',
   font: 'modern',
   headlineWeight: 800,
   headlineSize: 136,
