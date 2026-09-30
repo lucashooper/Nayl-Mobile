@@ -28,4 +28,7 @@ create policy "onboarding_analytics insert"
   to anon, authenticated
   with check (true);
 
+-- Supabase's default privileges grant anon/authenticated everything on new
+-- public tables (TRUNCATE ignores RLS), so reset to insert only.
+revoke all on public.onboarding_analytics from anon, authenticated;
 grant insert on public.onboarding_analytics to anon, authenticated;
