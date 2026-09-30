@@ -46,9 +46,9 @@ export function isPurchasesEnabled(): boolean {
   return hasIosKey();
 }
 
-const ENTITLEMENT_ID = 'default';
+// The RevenueCat entitlement that unlocks the app. Nothing else counts as access.
+export const PRO_ENTITLEMENT_ID = 'pro';
 const SUBSCRIPTION_STATUS_BASE = '@nayl_is_pro';
-const PRODUCT_ID_PREFIX = 'nayl_pro';
 
 async function getSubscriptionStorageKey(): Promise<string> {
   const hasUser = await sessionService.hasUser();
@@ -59,22 +59,7 @@ async function getSubscriptionStorageKey(): Promise<string> {
 }
 
 function hasProAccess(customerInfo: CustomerInfo): boolean {
-  const activeEntitlements = customerInfo.entitlements.active;
-
-  if (activeEntitlements[ENTITLEMENT_ID]?.isActive) {
-    return true;
-  }
-
-  if (Object.values(activeEntitlements).some((e) => e.isActive)) {
-    return true;
-  }
-
-  const activeSubs = customerInfo.activeSubscriptions ?? [];
-  if (activeSubs.some((id) => id.toLowerCase().includes(PRODUCT_ID_PREFIX))) {
-    return true;
-  }
-
-  return false;
+  return customerInfo.entitlements.active[PRO_ENTITLEMENT_ID]?.isActive === true;
 }
 
 class IAPService {
@@ -133,7 +118,9 @@ class IAPService {
     }
 
     const userId = await sessionService.getCurrentUserId();
-    await Purchases.logIn(userId);
+    if ((await Purchases.getAppUserID()) !== userId) {
+      await Purchases.logIn(userId);
+    }
   }
 
   async identifyUser(userId: string): Promise<void> {
@@ -274,32 +261,58 @@ class IAPService {
     }
   }
 
+  /**
+   * True only when RevenueCat reports an active 'pro' entitlement. Never reads the
+   * AsyncStorage cache when purchases are enabled, so stale state can't unlock the app.
+   * Offline, the RevenueCat SDK answers from its own on-device CustomerInfo cache.
+   */
   async isProUser(): Promise<boolean> {
-    try {
-      await this.ensurePurchaseReady();
-
-      if (!this.initialized) {
-        const storageKey = await getSubscriptionStorageKey();
-        const cached = await AsyncStorage.getItem(storageKey);
-        if (cached !== null) return JSON.parse(cached);
+    if (!isPurchasesEnabled()) {
+      try {
+        const cached = await AsyncStorage.getItem(await getSubscriptionStorageKey());
+        return cached !== null && JSON.parse(cached) === true;
+      } catch {
         return false;
       }
+    }
 
+    try {
+      await this.ensurePurchaseReady();
+    } catch (error) {
+      // logIn can fail offline; the SDK keeps the last identified user.
+      if (__DEV__) console.warn('[IAP] ensurePurchaseReady failed:', error);
+    }
+    if (!this.initialized) return false;
+
+    try {
       const Purchases = getPurchasesModule()?.default;
       if (!Purchases) return false;
       const customerInfo = await Purchases.getCustomerInfo();
       const isPro = hasProAccess(customerInfo);
       await this.cacheProStatus(isPro);
       return isPro;
-    } catch (error) {
-      try {
-        const storageKey = await getSubscriptionStorageKey();
-        const cached = await AsyncStorage.getItem(storageKey);
-        if (cached !== null) return JSON.parse(cached);
-      } catch {
-        // fall through
-      }
+    } catch {
       return false;
+    }
+  }
+
+  /**
+   * Whether this user can still get the weekly plan's free trial. Unknown counts as
+   * eligible; only an explicit "ineligible" / "no offer" answer hides the trial.
+   */
+  async isEligibleForIntroOffer(productId: string): Promise<boolean> {
+    try {
+      const Purchases = getPurchasesModule()?.default;
+      if (!this.initialized || !Purchases) return true;
+      const result = await Purchases.checkTrialOrIntroductoryPriceEligibility([productId]);
+      const status = result[productId]?.status;
+      const { INTRO_ELIGIBILITY_STATUS } = Purchases;
+      return (
+        status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_INELIGIBLE &&
+        status !== INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_NO_INTRO_OFFER_EXISTS
+      );
+    } catch {
+      return true;
     }
   }
 }

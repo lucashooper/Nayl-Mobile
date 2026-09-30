@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import hapticService, { HapticType, HapticIntensity } from '../services/hapticService';
 import iapService, { IAPPackage } from '../services/iapService';
+import { hasAppAccess } from '../services/accessGate';
 
 import { PRIVACY_POLICY_URL, TERMS_URL } from '../constants/legalUrls';
 
@@ -55,22 +56,20 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [packages, setPackages] = useState<Record<string, IAPPackage>>({});
+  const [weeklyTrialEligible, setWeeklyTrialEligible] = useState(true);
+  // Parents pass a new onUnlockPro each render; keep the latest without re-running the load.
+  const onUnlockProRef = useRef(onUnlockPro);
+  onUnlockProRef.current = onUnlockPro;
 
   // Fetch available packages from RevenueCat on mount
   useEffect(() => {
     const loadOfferings = async () => {
       try {
-        if (!forceDisplay) {
-          if (!iapService.isPurchasesEnabled()) {
-            onUnlockPro();
-            return;
-          }
-
-          const alreadyPro = await iapService.isProUser();
-          if (alreadyPro) {
-            onUnlockPro();
-            return;
-          }
+        // Hard paywall: only skip straight through with a verified 'pro' entitlement
+        // (or a build/account that can't buy anything, see hasAppAccess).
+        if (!forceDisplay && (await hasAppAccess())) {
+          onUnlockProRef.current();
+          return;
         }
 
         if (!iapService.isPurchasesEnabled()) {
@@ -96,13 +95,18 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
             }
           }
           setPackages(pkgMap);
+          if (pkgMap.weekly) {
+            setWeeklyTrialEligible(
+              await iapService.isEligibleForIntroOffer(pkgMap.weekly.product.identifier),
+            );
+          }
         }
       } catch {
         // Offerings may fail in development; the purchase will gracefully error too
       }
     };
     loadOfferings();
-  }, [forceDisplay, onUnlockPro]);
+  }, [forceDisplay]);
 
   const getPlanTitle = (planId: PlanId): string => {
     const pkg = packages[planId];
@@ -122,7 +126,7 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
       | null
       | undefined;
 
-    if (!intro || intro.price == null || intro.price > 0) {
+    if (!weeklyTrialEligible || !intro || intro.price == null || intro.price > 0) {
       return null;
     }
 
@@ -133,6 +137,27 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
     }
 
     return null;
+  };
+
+  // e.g. "3-Day Free Trial, then £4.99/week". Only shown when the weekly product
+  // really has a free intro offer, so the card never advertises a trial Apple won't give.
+  const getWeeklyTrialLabel = (): string | null => {
+    const intro = packages.weekly?.product?.introPrice as
+      | { price?: number; periodNumberOfUnits?: number; periodUnit?: string; cycles?: number }
+      | null
+      | undefined;
+
+    if (!weeklyTrialEligible || !intro || intro.price == null || intro.price > 0) {
+      return null;
+    }
+
+    const units = intro.periodNumberOfUnits ?? intro.cycles;
+    if (units == null || !intro.periodUnit) {
+      return null;
+    }
+
+    const unit = intro.periodUnit.charAt(0).toUpperCase() + intro.periodUnit.slice(1).toLowerCase();
+    return `${units}-${unit} Free Trial, then ${getPriceString('weekly')}/week`;
   };
 
   const getSelectedPlanSummary = (): { title: string; duration: string; price: string; cadence: string } => {
@@ -423,7 +448,9 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
                 </View>
                 <Text style={styles.purchaseOptionTitle}>{getPlanTitle('weekly')}</Text>
                 <Text style={styles.purchaseOptionPrice}>{getPriceString('weekly')}</Text>
-                <Text style={styles.purchaseOptionCadence}>per week</Text>
+                <Text style={styles.purchaseOptionCadence} numberOfLines={3}>
+                  {getWeeklyTrialLabel() ?? 'per week'}
+                </Text>
               </TouchableOpacity>
 
               {/* Yearly Option */}

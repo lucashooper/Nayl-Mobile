@@ -5,6 +5,8 @@ import sessionService from '../services/sessionService';
 import iapService from '../services/iapService';
 import profileService from '../services/profileService';
 import { markWelcomePending } from '../services/welcomeService';
+import { hasAppAccess } from '../services/accessGate';
+import { Alert } from 'react-native';
 
 type OnboardingRouteParams = {
   paywallOnly?: boolean;
@@ -22,6 +24,12 @@ const OnboardingScreen: React.FC = () => {
     const userId = await sessionService.initializeUser();
     await iapService.identifyUser(userId);
 
+    // Hard paywall: the app is only reachable with an active 'pro' entitlement.
+    if (!(await hasAppAccess())) {
+      Alert.alert('Subscription required', 'Start your Nayl Pro subscription to continue.');
+      return;
+    }
+
     const trimmedName = userName.trim();
     if (trimmedName) {
       try {
@@ -32,7 +40,10 @@ const OnboardingScreen: React.FC = () => {
       }
     }
 
-    await markWelcomePending();
+    // Paywall-only runs are returning users who have already been welcomed.
+    if (!paywallOnly) {
+      await markWelcomePending();
+    }
 
     navigation.dispatch(
       CommonActions.reset({
