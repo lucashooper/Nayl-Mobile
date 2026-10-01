@@ -337,7 +337,7 @@ const PersonalizingScreen: React.FC<PersonalizingScreenProps> = ({ userName, onC
             Some not so great news...
           </Text>
           
-          <PrimaryButton title="Continue" onPress={onComplete} />
+          <PrimaryButton title="Continue" onPress={onComplete} style={styles.ctaSpacing} />
         </Animated.View>
       </View>
 
@@ -372,53 +372,41 @@ const styles = StyleSheet.create({
     paddingBottom: height * 0.4, // Reserve space for nail icon
   },
   loadingText: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
-    marginBottom: 40,
-    letterSpacing: 0.5,
+    marginBottom: 24,
   },
   percentageText: {
     fontSize: 72,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: -2,
-    // Enhanced premium styling
-    textShadowColor: 'rgba(0, 0, 0, 0.9)',
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 6,
+    fontVariant: ['tabular-nums'],
   },
   personalizedMessageContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    maxWidth: width * 0.8,
-    marginTop: -height * 0.1, // Move text higher up to better balance the layout
+    paddingHorizontal: 8,
+    marginTop: -height * 0.1,
   },
   personalizedMessage: {
-    fontSize: 40,
+    fontSize: 32,
     fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 44,
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-    marginBottom: 8,
+    lineHeight: 38,
+    letterSpacing: -0.5,
+    marginBottom: 12,
   },
   personalizedSubtitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
-    marginTop: 8,
-    letterSpacing: 0.3,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    marginTop: 6,
   },
   continueButton: {
     marginTop: 40,
@@ -441,6 +429,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+  ctaSpacing: {
+    marginTop: 36,
   },
   nailIconContainer: {
     position: 'absolute',

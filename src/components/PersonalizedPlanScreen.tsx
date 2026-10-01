@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from './PrimaryButton';
+import { ChartLineUp, Check, FlowerLotus, Siren, Trophy } from 'phosphor-react-native';
 import LottieView from 'lottie-react-native';
 import Animated, {
   useSharedValue,
@@ -281,19 +282,19 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
           <View style={styles.benefitsList}>
             <View style={styles.benefitItem}>
               <View style={styles.bulletPoint}>
-                <Text style={styles.bulletIcon}>🔒</Text>
+                <Check size={14} color="#000000" weight="bold" />
               </View>
               <Text style={styles.benefitText}>Build unbreakable self-control</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.bulletPoint}>
-                <Text style={styles.bulletIcon}>🧠</Text>
+                <Check size={14} color="#000000" weight="bold" />
               </View>
               <Text style={styles.benefitText}>Become more aware of your triggers</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.bulletPoint}>
-                <Text style={styles.bulletIcon}>⚡</Text>
+                <Check size={14} color="#000000" weight="bold" />
               </View>
               <Text style={styles.benefitText}>Rewire your brain to prefer healthier habits</Text>
             </View>
@@ -317,19 +318,19 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
           <View style={styles.benefitsList}>
             <View style={styles.benefitItem}>
               <View style={styles.bulletPoint}>
-                <Text style={styles.bulletIcon}>💚</Text>
+                <Check size={14} color="#000000" weight="bold" />
               </View>
               <Text style={styles.benefitText}>Allow nails and skin to heal and recover</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.bulletPoint}>
-                <Text style={styles.bulletIcon}>🦷</Text>
+                <Check size={14} color="#000000" weight="bold" />
               </View>
               <Text style={styles.benefitText}>Prevent damage to your teeth and gums</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.bulletPoint}>
-                <Text style={styles.bulletIcon}>🛡️</Text>
+                <Check size={14} color="#000000" weight="bold" />
               </View>
               <Text style={styles.benefitText}>Reduce your risk of infections</Text>
             </View>
@@ -343,7 +344,7 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
           <View style={styles.featuresContainer}>
             <View style={styles.featureItem}>
               <View style={styles.featureIconContainer}>
-                <Text style={styles.featureIcon}>🚨</Text>
+                <Siren size={22} color="#FFFFFF" weight="duotone" />
               </View>
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Panic Button</Text>
@@ -353,7 +354,7 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
             
             <View style={styles.featureItem}>
               <View style={styles.featureIconContainer}>
-                <Text style={styles.featureIcon}>🏆</Text>
+                <Trophy size={22} color="#FFFFFF" weight="duotone" />
               </View>
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Achievements</Text>
@@ -363,7 +364,7 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
             
             <View style={styles.featureItem}>
               <View style={styles.featureIconContainer}>
-                <Text style={styles.featureIcon}>📊</Text>
+                <ChartLineUp size={22} color="#FFFFFF" weight="duotone" />
               </View>
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Progress Tracking</Text>
@@ -373,7 +374,7 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
             
             <View style={styles.featureItem}>
               <View style={styles.featureIconContainer}>
-                <Text style={styles.featureIcon}>🧘</Text>
+                <FlowerLotus size={22} color="#FFFFFF" weight="duotone" />
               </View>
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Meditation & Sounds</Text>
@@ -400,19 +401,19 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
           <View style={styles.benefitsList}>
             <View style={styles.benefitItem}>
               <View style={styles.bulletPoint}>
-                <Text style={styles.bulletIcon}>👑</Text>
+                <Check size={14} color="#000000" weight="bold" />
               </View>
               <Text style={styles.benefitText}>Feel proud of your hands and appearance</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.bulletPoint}>
-                <Text style={styles.bulletIcon}>🚀</Text>
+                <Check size={14} color="#000000" weight="bold" />
               </View>
               <Text style={styles.benefitText}>Overcome a habit that held you back</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.bulletPoint}>
-                <Text style={styles.bulletIcon}>💎</Text>
+                <Check size={14} color="#000000" weight="bold" />
               </View>
               <Text style={styles.benefitText}>Prove to yourself that you can change</Text>
             </View>
@@ -468,80 +469,62 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 40,
     paddingHorizontal: 24,
     width: '100%',
-    backgroundColor: 'transparent',
     zIndex: 10,
   },
   personalizedHeadline: {
-    fontSize: 40,
+    fontSize: 32,
     fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 52,
-    letterSpacing: 0.3,
-    marginBottom: 20,
-    paddingHorizontal: 16,
+    lineHeight: 38,
+    letterSpacing: -0.6,
+    marginBottom: 16,
+    paddingHorizontal: 8,
     zIndex: 10,
   },
   targetDateSubheadline: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#F1F5F9',
+    color: '#C1FF72',
     textAlign: 'center',
-    lineHeight: 34,
-    letterSpacing: 0.2,
-    marginBottom: 16,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    lineHeight: 26,
+    letterSpacing: -0.2,
+    marginBottom: 8,
     zIndex: 10,
   },
   targetDateText: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '500',
-    color: '#94A3B8',
+    color: 'rgba(255, 255, 255, 0.55)',
     textAlign: 'center',
-    lineHeight: 24,
-    letterSpacing: 0.1,
-    marginTop: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
+    lineHeight: 21,
     zIndex: 10,
   },
   benefitSection: {
-    marginBottom: 60,
+    marginBottom: 48,
     alignItems: 'center',
     paddingHorizontal: 24,
     width: '100%',
-    backgroundColor: 'transparent',
     zIndex: 10,
   },
   benefitTitle: {
-    fontSize: 30,
-    fontWeight: '600',
+    fontSize: 26,
+    fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 40,
-    letterSpacing: 0.3,
-    marginBottom: 40,
+    lineHeight: 32,
+    letterSpacing: -0.4,
+    marginBottom: 24,
     paddingHorizontal: 16,
     zIndex: 10,
   },
   iconContainer: {
-    width: 200,
-    height: 200,
-    marginBottom: 32,
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: 'transparent',
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    width: 160,
+    height: 160,
+    marginBottom: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -559,14 +542,15 @@ const styles = StyleSheet.create({
   },
   benefitItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 20,
+    alignItems: 'center',
+    marginBottom: 14,
   },
   bulletPoint: {
-    width: 32,
-    height: 32,
-    marginRight: 16,
-    marginTop: 2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#C1FF72',
+    marginRight: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -576,64 +560,55 @@ const styles = StyleSheet.create({
   },
   benefitText: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '500',
-    color: '#F1F5F9',
-    lineHeight: 26,
-    letterSpacing: 0.1,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
+    color: '#FFFFFF',
+    lineHeight: 22,
+    letterSpacing: -0.1,
     zIndex: 10,
   },
   featuresSection: {
-    marginBottom: 60,
+    marginBottom: 48,
     alignItems: 'center',
     paddingHorizontal: 24,
     width: '100%',
-    backgroundColor: 'transparent',
     zIndex: 10,
   },
   featuresTitle: {
-    fontSize: 28,
-    fontWeight: '600',
+    fontSize: 26,
+    fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 38,
-    letterSpacing: 0.3,
-    marginBottom: 36,
+    lineHeight: 32,
+    letterSpacing: -0.4,
+    marginBottom: 24,
     paddingHorizontal: 16,
     zIndex: 10,
   },
   featuresContainer: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   featureItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 24,
+    alignItems: 'center',
+    marginBottom: 18,
   },
   featureIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    marginRight: 14,
   },
   featureIcon: {
     fontSize: 24,
@@ -642,22 +617,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#FFFFFF',
-    marginBottom: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    marginBottom: 2,
   },
   featureDescription: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#E2E8F0',
-    lineHeight: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
+    fontSize: 14,
+    fontWeight: '400',
+    color: 'rgba(255, 255, 255, 0.55)',
+    lineHeight: 19,
   },
   testimonialSection: {
     marginBottom: 60,
@@ -693,25 +662,20 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   testimonialText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '500',
     color: '#FFFFFF',
-    lineHeight: 28,
-    letterSpacing: 0.1,
+    lineHeight: 26,
+    letterSpacing: -0.2,
     textAlign: 'center',
-    marginBottom: 20,
-    fontStyle: 'italic',
-    textShadowColor: 'rgba(0, 0, 0, 0.7)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 3,
+    marginBottom: 12,
     zIndex: 10,
   },
   testimonialAuthor: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#94A3B8',
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
-    letterSpacing: 0.2,
     zIndex: 10,
   },
   ratingSection: {
@@ -723,20 +687,15 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   ratingContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
     borderRadius: 50,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   ratingStars: {
-    fontSize: 24,
+    fontSize: 18,
     letterSpacing: 2,
   },
   discountSection: {

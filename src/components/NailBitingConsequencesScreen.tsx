@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from './PrimaryButton';
+import { HandHeart, MusicNotes, Virus } from 'phosphor-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -355,23 +356,23 @@ const NailBitingConsequencesScreen: React.FC<NailBitingConsequencesScreenProps> 
         {/* Impact Points with Enhanced Content */}
         <View style={styles.impactsContainer}>
           <Animated.View style={[styles.impactItem, impact1Style]}>
-            <Text style={styles.impactEmoji}>🦷</Text>
+            <View style={styles.impactIcon}><Virus size={22} color="#FFFFFF" weight="duotone" /></View>
             <Text style={styles.impactText}>
-              That's enough time to transfer germs from your fingers to your mouth over 50,000 times.
+              Enough time to move germs from fingers to mouth over 50,000 times.
             </Text>
           </Animated.View>
 
           <Animated.View style={[styles.impactItem, impact2Style]}>
-            <Text style={styles.impactEmoji}>🎸</Text>
+            <View style={styles.impactIcon}><MusicNotes size={22} color="#FFFFFF" weight="duotone" /></View>
             <Text style={styles.impactText}>
-              With that time, you could learn the basics of playing the guitar or piano.
+              Enough time to learn the basics of guitar or piano.
             </Text>
           </Animated.View>
 
           <Animated.View style={[styles.impactItem, impact3Style]}>
-            <Text style={styles.impactEmoji}>🤝</Text>
+            <View style={styles.impactIcon}><HandHeart size={22} color="#FFFFFF" weight="duotone" /></View>
             <Text style={styles.impactText}>
-              Imagine spending that time with confident, healthy hands in every social situation.
+              Time you could spend with healthy hands you're proud of.
             </Text>
           </Animated.View>
         </View>
@@ -418,23 +419,20 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   contextTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-    marginBottom: 16,
-    letterSpacing: 0.3,
-    lineHeight: 24,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 16,
-    letterSpacing: 0.5,
-    lineHeight: 34,
+    marginBottom: 6,
+    letterSpacing: -0.3,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: -0.2,
   },
   statisticContainer: {
     alignItems: 'center',
@@ -446,13 +444,11 @@ const styles = StyleSheet.create({
   },
   statisticNumber: {
     fontSize: 72,
-    fontWeight: '900',
-    color: '#DC2626',
+    fontWeight: '800',
+    color: '#FF6B6B',
     textAlign: 'center',
-    letterSpacing: -2,
-    textShadowColor: 'rgba(220, 38, 38, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    letterSpacing: -2.5,
+    fontVariant: ['tabular-nums'],
   },
   statisticUnit: {
     fontSize: 18,
@@ -464,23 +460,35 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
-    marginBottom: 40,
-    letterSpacing: 0.3,
-    lineHeight: 24,
+    marginBottom: 32,
   },
   impactsContainer: {
     width: '100%',
-    marginBottom: 40,
+    gap: 12,
+    marginBottom: 32,
   },
   impactItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-    paddingHorizontal: 8,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  impactIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
   },
   impactEmoji: {
     fontSize: 24,
@@ -489,11 +497,11 @@ const styles = StyleSheet.create({
   },
   impactText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
     color: '#FFFFFF',
-    lineHeight: 22,
-    letterSpacing: 0.2,
+    lineHeight: 21,
+    letterSpacing: -0.1,
   },
   buttonContainer: {
     width: '100%',

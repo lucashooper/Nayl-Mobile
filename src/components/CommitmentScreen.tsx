@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from './PrimaryButton';
+import { Check } from 'phosphor-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -342,8 +343,8 @@ const CommitmentScreen: React.FC<CommitmentScreenProps> = ({ onComplete }) => {
               {commitments.map((commitment, index) => (
                 <View key={index} style={styles.commitmentItem}>
                   <View style={styles.commitmentCheckmarkWrapper}>
-                    <View style={[styles.commitmentCheckmark, { backgroundColor: '#3B82F6' }]}>
-                      <Text style={styles.checkmark}>✓</Text>
+                    <View style={styles.commitmentCheckmark}>
+                      <Check size={14} color="#000000" weight="bold" />
                     </View>
                   </View>
                   <Text style={styles.commitmentText}>
@@ -355,7 +356,7 @@ const CommitmentScreen: React.FC<CommitmentScreenProps> = ({ onComplete }) => {
 
                                      {/* Signature Pad */}
               <Animated.View style={[styles.signatureContainer, signatureStyle]}>
-              <Text style={styles.signatureLabel}>Sign your commitment:</Text>
+              <Text style={styles.signatureLabel}>Sign your commitment</Text>
               <Text style={styles.signatureInstruction}>
                 {isSigning ? 'Signing...' : 'Draw your signature below'}
               </Text>
@@ -374,8 +375,8 @@ const CommitmentScreen: React.FC<CommitmentScreenProps> = ({ onComplete }) => {
                     onBegin={handleSigningStart}
                     onEnd={handleSigningEnd}
                     strokeWidth={3}
-                    strokeColor="#3B82F6"
-                    backgroundColor="rgba(255, 255, 255, 0.05)"
+                    strokeColor="#FFFFFF"
+                    backgroundColor="rgba(255, 255, 255, 0.06)"
                   />
                 </View>
                
@@ -434,60 +435,48 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   headlineContainer: {
-    marginBottom: 20,
+    marginBottom: 8,
     maxWidth: width * 0.9,
   },
   headline: {
-    fontSize: 36,
-    fontWeight: '900',
+    fontSize: 34,
+    fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 44,
-    letterSpacing: 0.8,
-    textShadowColor: 'rgba(0, 0, 0, 0.9)',
-    textShadowOffset: { width: 0, height: 3 },
-    textShadowRadius: 6,
+    lineHeight: 40,
+    letterSpacing: -0.6,
   },
   subheadlineContainer: {
-    marginBottom: 40,
+    marginBottom: 28,
     maxWidth: width * 0.9,
   },
   subheadline: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#E2E8F0',
+    fontSize: 17,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
-    lineHeight: 26,
-    letterSpacing: 0.3,
-    textShadowColor: 'rgba(0, 0,0, 0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    lineHeight: 22,
   },
   commitmentsList: {
     width: '100%',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   commitmentItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-    paddingHorizontal: 8,
+    alignItems: 'center',
+    marginBottom: 14,
+    paddingHorizontal: 4,
   },
   commitmentCheckmarkWrapper: {
-    marginRight: 16,
-    marginTop: 2,
+    marginRight: 14,
   },
   commitmentCheckmark: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#C1FF72',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
   },
   checkmark: {
     fontSize: 16,
@@ -500,37 +489,27 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FFFFFF',
     lineHeight: 22,
-    letterSpacing: 0.2,
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
+    letterSpacing: -0.1,
   },
   signatureContainer: {
     width: '100%',
-    marginBottom: 40,
+    marginBottom: 28,
     alignItems: 'center',
-    // Prevent gesture conflicts
     zIndex: 9999,
   },
   signatureLabel: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: 0.3,
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    marginBottom: 4,
   },
   signatureInstruction: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '400',
-    color: '#94A3B8',
+    color: 'rgba(255, 255, 255, 0.4)',
     textAlign: 'center',
-    marginBottom: 16,
-    fontStyle: 'italic',
-    opacity: 0.8,
+    marginBottom: 12,
   },
   signaturePad: {
     width: width * 0.85,
@@ -547,49 +526,32 @@ const styles = StyleSheet.create({
   },
   signatureCanvas: {
     flex: 1,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#3B82F6',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   signatureCanvasActive: {
-    borderColor: '#60A5FA',
-    shadowColor: '#60A5FA',
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 8,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
   },
   clearButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(59, 130, 246, 0.9)',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 14,
   },
   clearButtonText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   signatureNote: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '400',
-    color: '#94A3B8',
+    color: 'rgba(255, 255, 255, 0.35)',
     textAlign: 'center',
-    fontStyle: 'italic',
   },
   buttonContainer: {
     width: '100%',

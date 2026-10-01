@@ -387,7 +387,7 @@ const KeyMilestonesScreen: React.FC<KeyMilestonesScreenProps> = ({ onContinue })
             {/* Glow effect */}
             <Path
               d={createCurvePath()}
-              stroke="#3B82F6"
+              stroke="#C1FF72"
               strokeWidth="12"
               fill="none"
               strokeLinecap="round"
@@ -397,7 +397,7 @@ const KeyMilestonesScreen: React.FC<KeyMilestonesScreenProps> = ({ onContinue })
             {/* Main curve */}
             <Path
               d={createCurvePath()}
-              stroke="#3B82F6"
+              stroke="#C1FF72"
               strokeWidth="8"
               fill="none"
               strokeLinecap="round"
@@ -434,7 +434,7 @@ const KeyMilestonesScreen: React.FC<KeyMilestonesScreenProps> = ({ onContinue })
               <MilestoneCheckmark color="#F97316" size={32} />
             </View>
             <Text style={styles.milestoneText}>
-              Noticeably healthier nails and skin within the first 1-2 weeks.
+              Healthier nails and skin within 1 to 2 weeks.
             </Text>
           </View>
 
@@ -443,7 +443,7 @@ const KeyMilestonesScreen: React.FC<KeyMilestonesScreenProps> = ({ onContinue })
               <MilestoneCheckmark color="#10B981" size={32} />
             </View>
             <Text style={styles.milestoneText}>
-              Significant reduction in anxiety and stress-related habits after 30 days.
+              Less stress-driven biting after 30 days.
             </Text>
           </View>
 
@@ -452,7 +452,7 @@ const KeyMilestonesScreen: React.FC<KeyMilestonesScreenProps> = ({ onContinue })
               <MilestoneCheckmark color="#3B82F6" size={32} />
             </View>
             <Text style={styles.milestoneText}>
-              Increased confidence in social and professional situations within 90 days.
+              More confidence with your hands by 90 days.
             </Text>
           </View>
         </Animated.View>
@@ -491,34 +491,29 @@ const styles = StyleSheet.create({
     paddingBottom: 40, // Add bottom padding to ensure button is fully visible
   },
   headingContainer: {
-    marginBottom: 40,
+    marginBottom: 28,
     maxWidth: width * 0.9,
   },
   heading: {
-    fontSize: 28,
-    fontWeight: '700', // Softer weight
+    fontSize: 30,
+    fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 38, // Improved line spacing
-    letterSpacing: 0.3,
+    lineHeight: 36,
+    letterSpacing: -0.4,
     paddingHorizontal: 16,
   },
   graphContainer: {
     position: 'relative',
     alignSelf: 'center',
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 36,
   },
   graph: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    elevation: 8,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   milestoneOverlay: {
     position: 'absolute',
@@ -550,25 +545,24 @@ const styles = StyleSheet.create({
   },
   milestonesList: {
     width: '100%',
-    marginBottom: 40, // Reduced from 60 to 40 for better spacing with button
+    marginBottom: 32,
   },
   listTitle: {
-    fontSize: 20,
-    fontWeight: '600', // Softer weight for hierarchy
-    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
-    marginBottom: 32,
-    letterSpacing: 0.3,
+    marginBottom: 20,
+    letterSpacing: 0.2,
   },
   milestoneItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-    paddingHorizontal: 8,
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   milestoneCheckmarkWrapper: {
-    marginRight: 16,
-    marginTop: 2,
+    marginRight: 14,
   },
   milestoneIcon: {
     width: 32,
@@ -592,10 +586,10 @@ const styles = StyleSheet.create({
   milestoneText: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '500', // Lighter weight
-    color: 'rgba(255, 255, 255, 0.95)',
-    lineHeight: 24,
-    letterSpacing: 0.2,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    lineHeight: 22,
+    letterSpacing: -0.1,
   },
   buttonContainer: {
     width: '100%',
