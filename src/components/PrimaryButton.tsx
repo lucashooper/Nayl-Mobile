@@ -40,7 +40,8 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 }) => {
   const scale = useSharedValue(1);
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const isMuted = disabled || muted;
+  // While loading, keep the solid look so the spinner stays visible.
+  const isMuted = (disabled && !loading) || muted;
 
   return (
     <Animated.View style={[styles.wrapper, pressStyle, style]}>

@@ -12,6 +12,8 @@ import {
   Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import PrimaryButton from './PrimaryButton';
+import { ChartLineUp, FlowerLotus, Siren, Trophy } from 'phosphor-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -395,67 +397,32 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
 
         {/* Premium Features Showcase */}
         <Animated.View style={[styles.featuresSection, buttonStyle]}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.featuresScrollContainer}
-          >
-            <View style={styles.featureCard}>
-              <View style={styles.featureCardHeader}>
-                <Text style={styles.featureCardIcon}>🚨</Text>
-                <Text style={styles.featureCardTitle}>Panic Button</Text>
+          <View style={styles.featureList}>
+            <View style={styles.featureRow}>
+              <View style={styles.featureRowIcon}>
+                <Siren size={18} color="#FFFFFF" weight="duotone" />
               </View>
-              <Text style={styles.featureCardDescription}>
-                Instant support when tempted
-              </Text>
-              <View style={styles.featureCardStatus}>
-                <Text style={styles.featureCardStatusText}>UNLOCKED</Text>
-                <Text style={styles.featureCardStatusIcon}>🔓</Text>
-              </View>
+              <Text style={styles.featureRowText}>Panic button for urges</Text>
             </View>
-            
-            <View style={styles.featureCard}>
-              <View style={styles.featureCardHeader}>
-                <Text style={styles.featureCardIcon}>🏆</Text>
-                <Text style={styles.featureCardTitle}>Achievement System</Text>
+            <View style={styles.featureRow}>
+              <View style={styles.featureRowIcon}>
+                <Trophy size={18} color="#FFFFFF" weight="duotone" />
               </View>
-              <Text style={styles.featureCardDescription}>
-                Celebrate milestones with badges
-              </Text>
-              <View style={styles.featureCardStatus}>
-                <Text style={styles.featureCardStatusText}>UNLOCKED</Text>
-                <Text style={styles.featureCardStatusIcon}>🔓</Text>
-              </View>
+              <Text style={styles.featureRowText}>Achievements and milestones</Text>
             </View>
-            
-            <View style={styles.featureCard}>
-              <View style={styles.featureCardHeader}>
-                <Text style={styles.featureCardIcon}>📊</Text>
-                <Text style={styles.featureCardTitle}>Progress Analytics</Text>
+            <View style={styles.featureRow}>
+              <View style={styles.featureRowIcon}>
+                <ChartLineUp size={18} color="#FFFFFF" weight="duotone" />
               </View>
-              <Text style={styles.featureCardDescription}>
-                Visual insights into your progress
-              </Text>
-              <View style={styles.featureCardStatus}>
-                <Text style={styles.featureCardStatusText}>UNLOCKED</Text>
-                <Text style={styles.featureCardStatusIcon}>🔓</Text>
-              </View>
+              <Text style={styles.featureRowText}>Progress analytics</Text>
             </View>
-            
-            <View style={styles.featureCard}>
-              <View style={styles.featureCardHeader}>
-                <Text style={styles.featureCardIcon}>🧘</Text>
-                <Text style={styles.featureCardTitle}>Meditation Library</Text>
+            <View style={styles.featureRow}>
+              <View style={styles.featureRowIcon}>
+                <FlowerLotus size={18} color="#FFFFFF" weight="duotone" />
               </View>
-              <Text style={styles.featureCardDescription}>
-                Guided sessions for stress relief
-              </Text>
-              <View style={styles.featureCardStatus}>
-                <Text style={styles.featureCardStatusText}>UNLOCKED</Text>
-                <Text style={styles.featureCardStatusIcon}>🔓</Text>
-              </View>
+              <Text style={styles.featureRowText}>Meditations and calming sounds</Text>
             </View>
-          </ScrollView>
+          </View>
         </Animated.View>
 
         {/* Purchase Options Section */}
@@ -506,25 +473,13 @@ const NaylProUpgradeScreen: React.FC<NaylProUpgradeScreenProps> = ({
             </View>
 
             {/* Unlock Button */}
-            <TouchableOpacity
-              style={[styles.unlockButton, isPurchasing && styles.unlockButtonDisabled]}
+            <PrimaryButton
+              title={getPrimaryButtonLabel()}
               onPress={handleUnlockPro}
-              activeOpacity={0.8}
               disabled={isPurchasing}
-            >
-              <LinearGradient
-                colors={['#7C3AED', '#EC4899']}
-                style={styles.buttonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                {isPurchasing ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={styles.buttonText}>{getPrimaryButtonLabel()}</Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+              loading={isPurchasing}
+              style={styles.unlockButton}
+            />
 
             <Text style={styles.subscriptionFinePrint}>{getFootnote()}</Text>
 
@@ -578,21 +533,20 @@ const styles = StyleSheet.create({
   },
   mainHeadline: {
     fontSize: 32,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 40,
-    letterSpacing: -0.5,
-    marginBottom: 8,
+    lineHeight: 38,
+    letterSpacing: -0.8,
+    marginBottom: 6,
     zIndex: 10,
   },
   subHeadline: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.65)',
+    color: 'rgba(255, 255, 255, 0.55)',
     textAlign: 'center',
-    lineHeight: 24,
-    letterSpacing: 0.1,
+    lineHeight: 22,
     zIndex: 10,
   },
   iconSection: {
@@ -625,30 +579,15 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   purchaseOverlay: {
-    backgroundColor: '#000000',
-    borderRadius: 20,
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingTop: 8,
     width: width,
     alignItems: 'center',
     alignSelf: 'center',
-    shadowColor: 'rgba(0, 0, 0, 0.5)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-    elevation: 12,
   },
   unlockButton: {
     width: '100%',
-    height: 56,
-    borderRadius: 28,
-    overflow: 'hidden',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 12,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   buttonGradient: {
     flex: 1,
@@ -666,92 +605,81 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 8,
     marginBottom: 16,
-    gap: 4,
+    gap: 8,
   },
   purchaseOption: {
     flex: 1,
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    shadowColor: 'rgba(0, 0, 0, 0.5)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-    elevation: 8,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    minHeight: 70,
-    minWidth: 80,
+    minHeight: 96,
   },
   purchaseOptionSelected: {
-    borderColor: '#A855F7',
-    borderWidth: 2.5,
-    backgroundColor: 'rgba(124, 58, 237, 0.12)',
-    shadowColor: '#A855F7',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 10,
+    borderColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   popularTag: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#C1FF72',
     borderRadius: 8,
     paddingVertical: 3,
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     position: 'absolute',
-    top: -6,
-    left: 6,
-    marginBottom: 0,
-    minWidth: 60,
+    top: -10,
+    alignSelf: 'center',
   },
   trialTag: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#C1FF72',
   },
   trialCadence: {
-    color: '#6EE7B7',
+    color: '#C1FF72',
     fontWeight: '600',
   },
   popularTagText: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#000000',
     textTransform: 'uppercase',
-    lineHeight: 10,
+    letterSpacing: 0.4,
+    lineHeight: 12,
     textAlign: 'center',
   },
   purchaseOptionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#CBD5E1',
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.6)',
     marginBottom: 4,
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   purchaseOptionPrice: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#FFFFFF',
+    letterSpacing: -0.5,
     marginBottom: 2,
     textAlign: 'center',
   },
   purchaseOptionCadence: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
-    color: '#94A3B8',
+    color: 'rgba(255, 255, 255, 0.45)',
     textAlign: 'center',
     marginTop: 2,
   },
   subscriptionFinePrint: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
-    color: '#64748B',
+    color: 'rgba(255, 255, 255, 0.4)',
     textAlign: 'center',
-    lineHeight: 15,
-    marginTop: 2,
+    lineHeight: 16,
     paddingHorizontal: 8,
   },
   unlockButtonDisabled: {
@@ -767,22 +695,44 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   footerLink: {
-    fontSize: 13,
-    color: '#94A3B8',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.45)',
     fontWeight: '500',
     textAlign: 'center',
-    textDecorationLine: 'underline',
   },
   footerDot: {
     marginHorizontal: 4,
-    color: '#94A3B8',
-    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontSize: 12,
   },
   featuresSection: {
     alignItems: 'center',
     zIndex: 10,
-    marginBottom: 20,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
+  },
+  featureList: {
+    width: '100%',
+    gap: 14,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  featureRowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  featureRowText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
   featuresScrollContainer: {
     paddingHorizontal: 8,

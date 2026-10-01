@@ -28,6 +28,7 @@ declare module 'phosphor-react-native' {
   export const MusicNotes: React.FC<IconProps>;
   export const HandHeart: React.FC<IconProps>;
   export const Sparkle: React.FC<IconProps>;
+  export const CaretLeft: React.FC<IconProps>;
 }
 
 
