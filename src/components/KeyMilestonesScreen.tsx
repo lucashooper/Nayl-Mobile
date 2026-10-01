@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import PrimaryButton from './PrimaryButton';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -458,20 +459,7 @@ const KeyMilestonesScreen: React.FC<KeyMilestonesScreenProps> = ({ onContinue })
 
         {/* Continue Button */}
         <Animated.View style={[styles.buttonContainer, buttonStyle]}>
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={handleContinue}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#3B82F6', '#2563EB', '#1D4ED8']}
-              style={styles.continueButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-            >
-              <Text style={styles.continueButtonText}>Continue</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          <PrimaryButton title="Continue" onPress={handleContinue} />
         </Animated.View>
       </View>
     </View>

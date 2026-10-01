@@ -8,6 +8,7 @@ import {
   Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import PrimaryButton from './PrimaryButton';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -377,20 +378,7 @@ const NailBitingConsequencesScreen: React.FC<NailBitingConsequencesScreenProps> 
 
         {/* Continue Button */}
         <Animated.View style={[styles.buttonContainer, buttonStyle]}>
-          <TouchableOpacity
-            style={styles.continueButton}
-            onPress={handleContinue}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#2563EB', '#1D4ED8']}
-              style={styles.continueButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-            >
-              <Text style={styles.continueButtonText}>View my dependency score</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          <PrimaryButton title="See my dependency score" onPress={handleContinue} />
         </Animated.View>
       </View>
 

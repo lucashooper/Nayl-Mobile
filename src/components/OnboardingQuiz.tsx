@@ -28,6 +28,7 @@ import KeyMilestonesScreen from './KeyMilestonesScreen';
 import CommitmentScreen from './CommitmentScreen';
 import PersonalizedPlanScreen from './PersonalizedPlanScreen';
 import NaylProUpgradeScreen from './NaylProUpgradeScreen';
+import PrimaryButton from './PrimaryButton';
 import {
   logOnboardingStep,
   ONBOARDING_STEP_NAMES,
@@ -711,23 +712,13 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
 
               {/* Call to Action Button */}
               <Animated.View style={[styles.buttonContainer, buttonAnimatedStyle]}>
-                <TouchableOpacity 
-                  style={styles.infoPageButton} 
+                <PrimaryButton
+                  title="Continue"
                   onPress={() => {
                     hapticService.trigger(HapticType.SUCCESS, HapticIntensity.PROMINENT);
                     goToNext();
                   }}
-                  activeOpacity={0.8}
-                >
-                  <LinearGradient
-                    colors={['#7C3AED', '#EC4899']}
-                    style={styles.infoPageButtonGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  >
-                    <Text style={styles.infoPageButtonText}>Continue</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
+                />
 
                 {/* Skip Link */}
                 <TouchableOpacity 
@@ -794,23 +785,13 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
               </View>
 
               {/* Call to Action Button */}
-              <TouchableOpacity 
-                style={styles.quizIntroButton} 
+              <PrimaryButton
+                title="Start quiz"
                 onPress={() => {
                   hapticService.trigger(HapticType.SUCCESS, HapticIntensity.PROMINENT);
                   goToNext();
                 }}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={['#7C3AED', '#1E40AF']}
-                  style={styles.quizIntroButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <Text style={styles.quizIntroButtonText}>Start Quiz</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+              />
             </View>
           </View>
         </View>
@@ -928,23 +909,13 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
               {/* Continue Button for Motivations Question */}
               {question.id === '2' && quizAnswers['2'] && Array.isArray(quizAnswers['2']) && quizAnswers['2'].length > 0 && (
                 <View style={styles.motivationsContinueContainer}>
-                  <TouchableOpacity
-                    style={styles.motivationsContinueButton}
+                  <PrimaryButton
+                    title="Continue"
                     onPress={() => {
                       hapticService.trigger(HapticType.SUCCESS, HapticIntensity.NORMAL);
                       goToNext();
                     }}
-                    activeOpacity={0.8}
-                  >
-                    <LinearGradient
-                      colors={['#3B82F6', '#1E40AF']}
-                      style={styles.motivationsContinueGradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 0, y: 1 }}
-                    >
-                      <Text style={styles.motivationsContinueText}>Continue</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
+                  />
                 </View>
               )}
 
@@ -1011,33 +982,15 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
             </View>
 
             {/* Continue Button */}
-            <TouchableOpacity
-              style={[
-                styles.continueButton,
-                userName.trim() ? styles.continueButtonActive : styles.continueButtonInactive
-              ]}
+            <PrimaryButton
+              title="Continue"
               onPress={() => {
                 if (userName.trim()) {
                   goToNext();
                 }
               }}
               disabled={!userName.trim()}
-              activeOpacity={0.8}
-            >
-              <LinearGradient
-                colors={userName.trim() ? ['#7C3AED', '#EC4899'] : ['rgba(255, 255, 255, 0.1)', 'rgba(255, 255, 255, 0.05)']}
-                style={styles.continueButtonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Text style={[
-                  styles.continueButtonText,
-                  userName.trim() ? styles.continueButtonTextActive : styles.continueButtonTextInactive
-                ]}>
-                  Continue
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            />
           </View>
         </View>
 

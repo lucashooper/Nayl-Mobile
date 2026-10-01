@@ -17,6 +17,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import PrimaryButton from './PrimaryButton';
 import hapticService, { HapticType, HapticIntensity } from '../services/hapticService';
 
 const { width, height } = Dimensions.get('window');
@@ -201,24 +202,7 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
         
         {/* Start Journey Button */}
         <Animated.View style={buttonsAnimatedStyle}>
-          <Animated.View style={beginButtonPressStyle}>
-            <TouchableOpacity 
-              style={styles.startButton} 
-              onPress={handleStart}
-              onPressIn={handleStartPressIn}
-              onPressOut={handleStartPressOut}
-              activeOpacity={1}
-            >
-              <LinearGradient
-                colors={['#6D28D9', '#DB2777']}
-                style={styles.buttonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                <Text style={styles.buttonText}>Begin</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
+          <PrimaryButton title="Get started" onPress={handleStart} style={styles.startButton} />
         </Animated.View>
         
         <Animated.View style={[buttonsAnimatedStyle, styles.loginContainer]}>
@@ -231,7 +215,9 @@ const OnboardingWelcome: React.FC<OnboardingWelcomeProps> = ({ onStart, onLogin,
               hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
               style={styles.loginTouchable}
             >
-              <Text style={styles.loginLink}>Login</Text>
+              <Text style={styles.loginLink}>
+                Already have an account? <Text style={styles.loginLinkStrong}>Log in</Text>
+              </Text>
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -294,25 +280,9 @@ const styles = StyleSheet.create({
   },
   
   startButton: {
-    width: width * 0.85,
-    height: 64, // Increased vertical padding for luxury
-    borderRadius: 32,
-    marginBottom: 24,
-    overflow: 'hidden',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3, // Softer shadow
-    shadowRadius: 20,
-    elevation: 8,
+    marginBottom: 12,
   },
-  
-  buttonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 32,
-  },
-  
+
   buttonText: {
     fontSize: 17,
     fontWeight: '600',
@@ -331,11 +301,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 
+  loginLinkStrong: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+
   loginLink: {
     fontSize: 15,
     fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.7)',
-    textDecorationLine: 'underline',
+    color: 'rgba(255, 255, 255, 0.55)',
     letterSpacing: 0.2,
     zIndex: 10,
   },

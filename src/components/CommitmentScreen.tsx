@@ -10,6 +10,7 @@ import {
   Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import PrimaryButton from './PrimaryButton';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -395,29 +396,11 @@ const CommitmentScreen: React.FC<CommitmentScreenProps> = ({ onComplete }) => {
             {/* Commit Button */}
             <Animated.View style={[styles.buttonContainer, buttonStyle]}>
               <Animated.View style={animatedButtonStyle}>
-                             <TouchableOpacity
-                   style={[
-                     styles.commitButton,
-                     !hasSignature && !isButtonActive && styles.commitButtonDisabled,
-                     isButtonActive && styles.commitButtonSigning
-                   ]}
-                   onPress={handleCommit}
-                   activeOpacity={0.8}
-                   disabled={false}
-                 >
-                             <LinearGradient
-                   colors={
-                     isButtonActive || hasSignature
-                       ? ['#3B82F6', '#2563EB', '#1D4ED8'] 
-                       : ['#6B7280', '#4B5563']
-                   }
-                   style={styles.commitButtonGradient}
-                   start={{ x: 0, y: 0 }}
-                   end={{ x: 0, y: 1 }}
-                 >
-                  <Text style={styles.commitButtonText}>I commit to myself</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                <PrimaryButton
+                  title="I commit to myself"
+                  onPress={handleCommit}
+                  muted={!hasSignature && !isButtonActive}
+                />
               </Animated.View>
             </Animated.View>
           </View>

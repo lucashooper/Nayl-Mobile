@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import PrimaryButton from './PrimaryButton';
 import LottieView from 'lottie-react-native';
 import Animated, {
   useSharedValue,
@@ -435,20 +436,7 @@ const PersonalizedPlanScreen: React.FC<PersonalizedPlanScreenProps> = ({
 
         {/* Final Call-to-Action */}
         <Animated.View style={[styles.ctaSection, ctaStyle]}>
-          <TouchableOpacity
-            style={styles.startJourneyButton}
-            onPress={handleStartJourney}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#7C3AED', '#EC4899']}
-              style={styles.buttonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.buttonText}>Start rewiring</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          <PrimaryButton title="Start rewiring" onPress={handleStartJourney} />
         </Animated.View>
 
         {/* Bottom spacing */}
