@@ -19,6 +19,8 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import LottieView from 'lottie-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Check, LockSimple, SmileySad, Tooth, Virus } from 'phosphor-react-native';
 import hapticService, { HapticType, HapticIntensity } from '../services/hapticService';
 import OnboardingWelcome from './OnboardingWelcome';
 import PersonalizingScreen from './PersonalizingScreen';
@@ -61,6 +63,9 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
   const [userName, setUserName] = useState('');
   const [showUpgradeScreen, setShowUpgradeScreen] = useState(paywallOnly);
   
+  const insets = useSafeAreaInsets();
+  const contentInset = { paddingTop: insets.top + 56, paddingBottom: Math.max(insets.bottom, 16) + 24 };
+
   const progressAnim = useSharedValue(0);
   const pagerRef = useRef<PagerView>(null);
 
@@ -538,38 +543,38 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
   // Trigger info page animations when it becomes visible
   useEffect(() => {
     if (currentPage === 1) { // Info page
-      titleOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
-      titleTranslateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
+      titleOpacity.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) });
+      titleTranslateY.value = withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) });
       
       setTimeout(() => {
-        statisticOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
-        statisticTranslateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
-      }, 200);
+        statisticOpacity.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) });
+        statisticTranslateY.value = withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) });
+      }, 70);
       
       setTimeout(() => {
-        impact1Opacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
-        impact1TranslateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
-      }, 400);
+        impact1Opacity.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) });
+        impact1TranslateY.value = withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) });
+      }, 140);
       
       setTimeout(() => {
-        impact2Opacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
-        impact2TranslateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
-      }, 600);
+        impact2Opacity.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) });
+        impact2TranslateY.value = withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) });
+      }, 210);
       
       setTimeout(() => {
-        impact3Opacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
-        impact3TranslateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
-      }, 800);
+        impact3Opacity.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) });
+        impact3TranslateY.value = withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) });
+      }, 280);
       
       setTimeout(() => {
-        buttonOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
-        buttonTranslateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
-      }, 1000);
+        buttonOpacity.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) });
+        buttonTranslateY.value = withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) });
+      }, 350);
       
       setTimeout(() => {
-        skipOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
-        skipTranslateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
-      }, 1200);
+        skipOpacity.value = withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) });
+        skipTranslateY.value = withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) });
+      }, 420);
     }
   }, [currentPage]);
 
@@ -577,7 +582,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
     <View style={styles.container}>
       {/* Floating Progress Bar - No Separate Background */}
       {currentPage < 12 && (
-        <View style={styles.progressBarContainer}>
+        <View style={[styles.progressBarContainer, { top: insets.top + 12 }]}>
           <View style={styles.progressBar}>
             <Animated.View 
               style={[
@@ -662,7 +667,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
               ))}
             </View>
 
-            <View style={styles.content}>
+            <View style={[styles.content, contentInset]}>
               {/* Main Title */}
               <Animated.Text 
                 style={[styles.infoPageTitle, titleAnimatedStyle]}
@@ -675,38 +680,30 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
                 style={[styles.statisticContainer, statisticAnimatedStyle]}
               >
                 <Text style={styles.statisticNumber}>1 in 3</Text>
-                <Text style={styles.statisticText}>
-                  people struggle with nail biting, affecting their health and confidence
-                </Text>
+                <Text style={styles.statisticText}>people bite their nails</Text>
               </Animated.View>
 
               {/* Impact Points */}
               <View style={styles.impactSection}>
                 <Animated.View style={[styles.impactItem, impact1AnimatedStyle]}>
                   <View style={styles.impactIcon}>
-                    <Text style={styles.impactIconText}>🦷</Text>
+                    <Tooth size={24} color="#FFFFFF" weight="duotone" />
                   </View>
-                  <Text style={styles.impactText}>
-                    Dental damage and jaw problems from constant pressure
-                  </Text>
+                  <Text style={styles.impactText}>Damages teeth and strains your jaw</Text>
                 </Animated.View>
 
                 <Animated.View style={[styles.impactItem, impact2AnimatedStyle]}>
                   <View style={styles.impactIcon}>
-                    <Text style={styles.impactIconText}>🦠</Text>
+                    <Virus size={24} color="#FFFFFF" weight="duotone" />
                   </View>
-                  <Text style={styles.impactText}>
-                    Risk of infections and bacteria transfer to mouth
-                  </Text>
+                  <Text style={styles.impactText}>Moves bacteria from fingers to mouth</Text>
                 </Animated.View>
 
                 <Animated.View style={[styles.impactItem, impact3AnimatedStyle]}>
                   <View style={styles.impactIcon}>
-                    <Text style={styles.impactIconText}>😔</Text>
+                    <SmileySad size={24} color="#FFFFFF" weight="duotone" />
                   </View>
-                  <Text style={styles.impactText}>
-                    Social anxiety and embarrassment about hand appearance
-                  </Text>
+                  <Text style={styles.impactText}>Makes you self-conscious about your hands</Text>
                 </Animated.View>
               </View>
 
@@ -719,19 +716,6 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
                     goToNext();
                   }}
                 />
-
-                {/* Skip Link */}
-                <TouchableOpacity 
-                  style={styles.infoPageSkipLink} 
-                  onPress={() => {
-                    hapticService.trigger(HapticType.LIGHT_TAP, HapticIntensity.SUBTLE);
-                    goToNext();
-                  }}
-                >
-                  <Text style={styles.infoPageSkipText}>
-                    Skip this information
-                  </Text>
-                </TouchableOpacity>
               </Animated.View>
             </View>
           </View>
@@ -760,17 +744,17 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
               ))}
             </View>
 
-            <View style={styles.content}>
+            <View style={[styles.content, contentInset]}>
               {/* Main Title */}
-                              <Text style={styles.quizIntroTitle}>
-                  Let's understand your nail biting habits
-                </Text>
+              <Text style={styles.quizIntroTitle}>
+                Let's understand your habit
+              </Text>
 
               {/* Privacy/Security Note */}
               <View style={styles.privacyContainer}>
-                <Text style={styles.privacyIcon}>🔒</Text>
+                <LockSimple size={16} color="rgba(255, 255, 255, 0.55)" weight="bold" />
                 <Text style={styles.privacyText}>
-                  Your data is encrypted and will never be shared
+                  Private and never shared
                 </Text>
               </View>
 
@@ -786,6 +770,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
 
               {/* Call to Action Button */}
               <PrimaryButton
+                style={styles.bottomCta}
                 title="Start quiz"
                 onPress={() => {
                   hapticService.trigger(HapticType.SUCCESS, HapticIntensity.PROMINENT);
@@ -819,7 +804,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
               ))}
             </View>
              
-            <View style={styles.content}>
+            <View style={[styles.content, contentInset]}>
               {/* Question Section */}
               <View style={styles.questionSection}>
                 <Text style={styles.question}>
@@ -831,75 +816,28 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
               <View style={styles.answersSection}>
                 {question.options.map((option: any) => {
                   const isMotivationsQuestion = question.id === '2';
-                  const isSelected = isMotivationsQuestion 
-                    ? quizAnswers[question.id] && quizAnswers[question.id].includes(option.id)
-                    : quizAnswers[question.id] === option.id;
-                  
+                  const answer = quizAnswers[question.id];
+                  const isSelected = isMotivationsQuestion
+                    ? Array.isArray(answer) && answer.includes(option.id)
+                    : answer === option.id;
+
                   return (
                     <TouchableOpacity
                       key={option.id}
-                      style={[
-                        styles.answerPill,
-                        isMotivationsQuestion && styles.motivationsPill
-                      ]}
+                      style={[styles.answerCard, isSelected && styles.answerCardSelected]}
                       onPress={() => handleQuizAnswer(question.id, option.id)}
-                      activeOpacity={0.8}
+                      activeOpacity={0.85}
                     >
-                                             {isMotivationsQuestion ? (
-                         // Sophisticated motivations pill design
-                         <>
-                           {isSelected && (
-                             <LinearGradient
-                               colors={['#3B82F6', '#1E40AF']}
-                               style={styles.motivationsPillGradient}
-                               start={{ x: 0, y: 0 }}
-                               end={{ x: 0, y: 1 }}
-                             />
-                           )}
-                           <View style={styles.motivationsPillContent}>
-                             {/* Left circle with tick animation */}
-                             <Animated.View style={[
-                               styles.motivationsCircle,
-                               isSelected && styles.motivationsCircleSelected,
-                               motivationsCircleAnimatedStyle
-                             ]}>
-                               {isSelected && (
-                                 <Animated.Text 
-                                   style={[
-                                     styles.motivationsTick,
-                                     motivationsTickAnimatedStyle
-                                   ]}
-                                 >
-                                   ✓
-                                 </Animated.Text>
-                                 )}
-                             </Animated.View>
-                             
-                             {/* Text content */}
-                             <Text style={[
-                               styles.motivationsText,
-                               isSelected && styles.motivationsTextSelected
-                             ]} numberOfLines={2}>
-                               {option.text}
-                             </Text>
-                           </View>
-                         </>
-                       ) : (
-                        // Regular pill design for other questions
-                        <>
-                          <LinearGradient
-                            colors={['#3B82F6', '#1E40AF']}
-                            style={styles.pillGradient}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 0, y: 1 }}
-                          />
-                          
-                          <View style={styles.pillContent}>
-                            <Text style={styles.answerText} numberOfLines={2}>
-                              {option.text}
-                            </Text>
-                          </View>
-                        </>
+                      <Text
+                        style={[styles.answerText, isSelected && styles.answerTextSelected]}
+                        numberOfLines={2}
+                      >
+                        {option.text}
+                      </Text>
+                      {isMotivationsQuestion && (
+                        <View style={[styles.checkCircle, isSelected && styles.checkCircleSelected]}>
+                          {isSelected && <Check size={14} color="#FFFFFF" weight="bold" />}
+                        </View>
                       )}
                     </TouchableOpacity>
                   );
@@ -921,7 +859,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
 
               {/* Skip Button - Hide for motivations question when answers are selected */}
               {!(question.id === '2' && quizAnswers['2'] && Array.isArray(quizAnswers['2']) && quizAnswers['2'].length > 0) && (
-                <View style={styles.skipButtonContainer}>
+                <View style={[styles.skipButtonContainer, { bottom: Math.max(insets.bottom, 16) + 8 }]}>
                   <TouchableOpacity 
                     style={styles.skipButton} 
                     onPress={handleSkipQuiz}
@@ -956,7 +894,7 @@ const OnboardingQuiz: React.FC<OnboardingQuizProps> = ({
             ))}
           </View>
           
-          <View style={styles.content}>
+          <View style={[styles.content, contentInset]}>
             {/* Question Section */}
             <View style={[styles.questionSection, { marginBottom: 40 }]}>
               <Text style={styles.question}>
@@ -1103,34 +1041,22 @@ const styles = StyleSheet.create({
   },
   progressBarContainer: {
     position: 'absolute',
-    top: 60, // Status bar height
     left: 24,
     right: 24,
-    zIndex: 1000, // High z-index to float above content
+    zIndex: 1000,
     alignItems: 'center',
   },
   progressBar: {
     width: '100%',
-    height: 3, // Slightly thicker for better visibility
-    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Slightly more visible
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 2,
     overflow: 'hidden',
-    // Add subtle shadow for depth
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 2,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#C1FF72',
     borderRadius: 2,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
-    elevation: 6,
   },
   progressText: {
     color: 'rgba(255, 255, 255, 0.6)',
@@ -1163,25 +1089,22 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
-    paddingTop: 80, // Increased to account for floating progress bar
-    paddingBottom: 40,
-    zIndex: 10, // Ensure content is above stars
+    zIndex: 10,
   },
   questionSection: {
     alignItems: 'center',
-    marginBottom: 20, // Increased from 16 to 20 to find better balance
-    paddingTop: 0, // Reduced from 20 to 0 to move questions higher
-    zIndex: 10, // Ensure questions are above stars
+    marginBottom: 28,
+    paddingHorizontal: 8,
+    zIndex: 10,
   },
   question: {
-    fontSize: 26,
-    fontWeight: '600',
+    fontSize: 28,
+    fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 12,
-    lineHeight: 36,
-    letterSpacing: 0.5,
-    zIndex: 10, // Ensure question text is above stars
+    lineHeight: 34,
+    letterSpacing: -0.4,
+    zIndex: 10,
   },
   subtitle: {
     fontSize: 16,
@@ -1194,17 +1117,41 @@ const styles = StyleSheet.create({
   },
   answersSection: {
     width: '100%',
-    alignItems: 'center',
-    marginBottom: 20, // Increased from 16 to 20 to find better balance
-    gap: 16, // Increased gap for better spacing between pills
-    zIndex: 10, // Ensure answer section is above stars
+    gap: 12,
+    zIndex: 10,
   },
-  answerPill: {
+  answerCard: {
     width: '100%',
-    marginBottom: 10, // Increased from 6 to 10 to find better balance
-    minHeight: 58, // Increased from 56 to 58 to match increased padding
-    position: 'relative',
-    zIndex: 10, // Ensure answer pills are above stars
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  answerCardSelected: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
+  },
+  answerTextSelected: {
+    color: '#000000',
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginLeft: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkCircleSelected: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   pillGradient: {
     position: 'absolute',
@@ -1252,15 +1199,12 @@ const styles = StyleSheet.create({
     zIndex: 10, // Ensure number text is above stars
   },
   answerText: {
-    fontSize: 19, // Increased from 18 to 19 for better proportion
-    fontWeight: '700', // Increased from 600 to 700 for better contrast
-    color: '#FFFFFF', // Pure white for maximum contrast against premium blue
-    textAlign: 'center', // Center the text
-    lineHeight: 23, // Increased from 22 to 23 for better proportion
-    textShadowColor: 'rgba(0, 0, 0, 0.6)', // Enhanced shadow for better text readability
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2, // Increased shadow radius for subtle glow effect
-    zIndex: 10, // Ensure answer text is above stars
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    lineHeight: 22,
+    letterSpacing: -0.2,
   },
   skipButton: {
     alignItems: 'center',
@@ -1268,18 +1212,16 @@ const styles = StyleSheet.create({
     zIndex: 10, // Ensure skip button is above stars
   },
   skipText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.6)',
-    zIndex: 10, // Ensure skip text is above stars
+    color: 'rgba(255, 255, 255, 0.45)',
   },
   skipButtonContainer: {
     position: 'absolute',
-    bottom: 40, // Adjust as needed
     left: 0,
     right: 0,
     alignItems: 'center',
-    zIndex: 10, // Ensure it's above stars
+    zIndex: 10,
   },
   finalContent: {
     alignItems: 'center',
@@ -1472,90 +1414,71 @@ const styles = StyleSheet.create({
     zIndex: 1, // Ensure stars are above background but below content
   },
   infoPageTitle: {
-    fontSize: 32,
-    fontWeight: '600',
+    fontSize: 30,
+    fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 24,
-    letterSpacing: 0.3,
-    lineHeight: 42,
+    marginBottom: 28,
+    letterSpacing: -0.4,
+    lineHeight: 36,
     paddingHorizontal: 16,
     zIndex: 10,
   },
   statisticContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)', // More subtle background
-    borderRadius: 20, // Larger radius for premium feel
-    paddingVertical: 20, // Reduced padding
-    paddingHorizontal: 28, // Reduced horizontal padding
-    marginBottom: 40, // Reduced spacing
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 24,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)', // More subtle border
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-    zIndex: 10, // Ensure statistic container is above stars
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    zIndex: 10,
   },
   statisticNumber: {
-    fontSize: 56, // Larger for more impact
-    fontWeight: '900', // Boldest for maximum impact
-    color: '#DC2626', // Premium red color for impact
+    fontSize: 56,
+    fontWeight: '800',
+    color: '#FF6B6B',
     textAlign: 'center',
-    marginBottom: 12, // More spacing
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0,  height: 2 },
-    textShadowRadius: 4,
-    letterSpacing: -1, // Tighter letter spacing for numbers
-    zIndex: 10, // Ensure statistic number is above stars
+    letterSpacing: -1.5,
+    marginBottom: 4,
+    zIndex: 10,
   },
   statisticText: {
-    fontSize: 16, // Reduced from 18 to create better visual hierarchy
-    color: '#AAAAAA', // Changed to subtle light grey for better contrast
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
-    lineHeight: 22, // Adjusted line height to match smaller font size
-    zIndex: 10, // Ensure statistic text is above stars
+    lineHeight: 22,
+    zIndex: 10,
   },
   impactSection: {
     width: '100%',
-    alignItems: 'center',
-    marginBottom: 32, // Reduced spacing
-    gap: 20, // Reduced gap between items
-    zIndex: 10, // Ensure impact section is above stars
+    marginBottom: 32,
+    gap: 12,
+    zIndex: 10,
   },
   impactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 18, // Slightly reduced gap
+    gap: 16,
     width: '100%',
-    paddingVertical: 16, // Reduced padding
-    paddingHorizontal: 24, // Reduced horizontal padding
-    backgroundColor: 'rgba(45, 45, 55, 0.5)', // Semi-transparent dark background for glassmorphism
-    borderRadius: 16, // Larger radius
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)', // Subtle edge highlight
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-    zIndex: 10, // Ensure impact items are above stars
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    zIndex: 10,
   },
   impactIcon: {
-    width: 56, // Larger icons
-    height: 56, // Larger icons
-    borderRadius: 28, // Larger radius
-    backgroundColor: 'rgba(255, 255, 255, 0.08)', // More subtle background
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)', // Subtle border
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 2,
-    zIndex: 10, // Ensure impact icons are above stars
+    zIndex: 10,
   },
   impactIconText: {
     fontSize: 28, // Larger emojis
@@ -1565,14 +1488,13 @@ const styles = StyleSheet.create({
     zIndex: 10, // Ensure impact icon text is above stars
   },
   impactText: {
-    fontSize: 19, // Slightly larger
-    color: 'rgba(255, 255, 255, 0.95)', // More opaque for better readability
+    fontSize: 16,
+    color: '#FFFFFF',
     flex: 1,
-    textAlign: 'left',
-    lineHeight: 26, // Better line height
-    fontWeight: '500', // Medium weight for better readability
-    letterSpacing: 0.2, // Slight letter spacing
-    zIndex: 10, // Ensure impact text is above stars
+    lineHeight: 22,
+    fontWeight: '500',
+    letterSpacing: -0.2,
+    zIndex: 10,
   },
   infoPageButton: {
     width: width * 0.9, // Wider button with margins
@@ -1615,12 +1537,12 @@ const styles = StyleSheet.create({
   // Quiz Intro Page Styles
   quizIntroTitle: {
     fontSize: 30,
-    fontWeight: '600', // Softer weight for calm feel
+    fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 42, // Improved line spacing
-    marginBottom: 20,
-    letterSpacing: 0.3,
+    lineHeight: 36,
+    marginBottom: 16,
+    letterSpacing: -0.4,
     paddingHorizontal: 24,
     zIndex: 10,
   },
@@ -1638,9 +1560,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 40,
-    gap: 12,
-    zIndex: 10, // Ensure privacy container is above stars
+    marginBottom: 24,
+    gap: 8,
+    zIndex: 10,
   },
   privacyIcon: {
     fontSize: 20,
@@ -1649,9 +1571,8 @@ const styles = StyleSheet.create({
   },
   privacyText: {
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.65)', // More refined hierarchy
-    fontWeight: '400', // Lighter weight
-    letterSpacing: 0.2,
+    color: 'rgba(255, 255, 255, 0.55)',
+    fontWeight: '500',
     zIndex: 10,
   },
   animationContainer: {
@@ -1706,28 +1627,22 @@ const styles = StyleSheet.create({
   },
   nameInputContainer: {
     width: '100%',
-    marginBottom: 32,
-    marginTop: 20,
-    zIndex: 10, // Ensure name input container is above stars
+    marginBottom: 24,
+    zIndex: 10,
   },
   nameInput: {
     width: '100%',
     height: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 18,
     paddingHorizontal: 20,
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     textAlign: 'center',
-    shadowColor: 'rgba(255, 255, 255, 0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-    zIndex: 10, // Ensure name input is above stars
+    zIndex: 10,
   },
   continueButton: {
     width: width * 0.85,
@@ -1791,11 +1706,14 @@ const styles = StyleSheet.create({
     marginTop: 100, // Adjust as needed to center content
     zIndex: 10, // Ensure placeholder text is above stars
   },
+  bottomCta: {
+    marginTop: 'auto',
+  },
   buttonContainer: {
     width: '100%',
     alignItems: 'center',
-    marginTop: 20,
-    zIndex: 10, // Ensure button container is above stars
+    marginTop: 'auto',
+    zIndex: 10,
   },
   welcomeContainer: {
     flex: 1,
@@ -1902,8 +1820,7 @@ const styles = StyleSheet.create({
     motivationsContinueContainer: {
       width: '100%',
       alignItems: 'center',
-      marginTop: 24,
-      marginBottom: 20,
+      marginTop: 28,
       zIndex: 10,
     },
     motivationsContinueButton: {
